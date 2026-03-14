@@ -67,8 +67,12 @@ def remove_bg():
         return jsonify({"error": "No path"}), 400
         
     threshold = data.get("threshold", 25.0)
+    res_val = data.get("resolution", 0)
+    resolution = None
+    if res_val > 0:
+        resolution = (int(res_val), int(res_val))
     
-    clean_pil = remove_background(frame_path, t1=float(threshold))
+    clean_pil = remove_background(frame_path, t1=float(threshold), resolution=resolution)
     # Save clean version
     p = Path(frame_path)
     clean_dir = p.parent / "clean"

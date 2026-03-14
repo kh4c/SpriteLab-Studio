@@ -121,10 +121,14 @@ def remove_background(img_path, t0=10.0, t1=25.0, resolution=None):
                 vis[ny, nx] = True
                 q.append((ny, nx))
     
-    alpha = np.where(vis, 0, 255).astype(np.uint8)
-    blend_mask = (~vis) & (dist < t1)
-    if np.any(blend_mask):
-        alpha[blend_mask] = np.clip((dist[blend_mask] - t0) / (t1 - t0) * 255, 0, 255).astype(np.uint8)
+    # Strictly base transparency on connected background
+    alpha = np.full((h, w), 255, dtype=np.uint8)
+    alpha[vis] = 0
+    
+    # Optional: subtle refinement on THE EDGE ONLY
+    # If a pixel IS connected to BG but its distance is between t0 and t1,
+    # we could give it partial transparency, but for sprite work, 
+    # hard edges are often better. We'll stick to conservative binary for now.
     
     rgba = np.dstack([arr, alpha])
     return Image.fromarray(rgba, "RGBA")

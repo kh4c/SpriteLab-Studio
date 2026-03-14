@@ -4,12 +4,14 @@ const state = {
     targetCount: 12,
     activeFrameIdx: 0,
     brushSize: 20,
-    isEraser: true,
+    brushColor: '#ffffff',
+    activeTool: 'brush', // 'brush', 'eraser', 'eyedropper'
     loopInterval: null,
     loopFrameIdx: 0,
     defaultThreshold: 8,
     miniLoopInterval: null,
-    miniLoopFrameIdx: 0
+    miniLoopFrameIdx: 0,
+    targetResolution: 0
 };
 
 const app = {
@@ -47,14 +49,42 @@ const app = {
 
         document.getElementById('tool-eraser').onclick = () => this.setTool('eraser');
         document.getElementById('tool-brush').onclick = () => this.setTool('brush');
+        document.getElementById('tool-eyedropper').onclick = () => this.setTool('eyedropper');
+        document.getElementById('brush-color').oninput = (e) => {
+            state.brushColor = e.target.value;
+            this.setTool('brush');
+        };
         document.getElementById('brush-size').oninput = (e) => this.updateBrushSize(e.target.value);
+
+        // Global shortcuts for undo/redo
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    canvasEditor.undo();
+                } else if (e.key === 'y') {
+                    e.preventDefault();
+                    canvasEditor.redo();
+                }
+            }
+        });
     },
 
     updateFrameCountDisplay() {
         document.getElementById('frame-count-val').innerText = state.targetCount;
     },
 
+    loadSettings() {
+        const saved = localStorage.getItem('spritelab_settings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            state.defaultThreshold = parsed.defaultThreshold || 8;
+        }
+    },
+
     navigate(screenId) {
+        console.log("Navigating to:", screenId);
+        console.log("Current state.frames count:", state.frames.length);
         // Update breadcrumb
         const titles = {
             'hub': 'Home',
@@ -79,10 +109,41 @@ const app = {
         });
 
         if (screenId === 'selection') {
+            document.getElementById('proceed-btn').innerText = "Proceed to Cleanup";
+            document.getElementById('proceed-btn').disabled = false;
             this.renderReel('frame-reel');
             state.loopFrameIdx = 0; // Reset index to show first frame
             this.startLoop();
-        } else if (screenId === 'editor') {
+            // Start mini loop here too if we want it "at all time"
+            canvasEditor.startMiniLoop(); 
+        } else if (screenId === 'editor' || screenId === 'drawing') {
+            this.stopLoop();
+            
+            // Refresh the specific reel for this screen
+            if (screenId === 'editor') this.renderEditorReel();
+            else if (screenId === 'drawing') this.renderDrawingReel();
+
+            // Re-target canvas and re-bind listeners
+            const canvasId = screenId === 'editor' ? 'editor-canvas' : 'drawing-canvas';
+            const targetCanvas = document.getElementById(canvasId);
+            if (targetCanvas) {
+                canvasEditor.canvas = targetCanvas;
+                canvasEditor.ctx = targetCanvas.getContext('2d');
+                canvasEditor.attachListeners();
+                
+                // Safety: only load if we actually have frames and a current frame record
+                const active = state.frames.filter(f => f.active);
+                if (active.length > 0) {
+                    let idx = active.indexOf(canvasEditor.currentFrame);
+                    if (idx < 0) idx = 0;
+                    
+                    // Only load if the frame actually has processed data
+                    if (active[idx].base64) {
+                        canvasEditor.loadFrame(idx, false);
+                    }
+                }
+            }
+            
             canvasEditor.startMiniLoop();
         } else {
             this.stopLoop();
@@ -262,6 +323,12 @@ const app = {
     startDrawing() {
         this.navigate('drawing');
         const active = state.frames.filter(f => f.active);
+        
+        // Update locked resolution display
+        const resText = state.targetResolution === 0 ? "Original Size" : `${state.targetResolution} x ${state.targetResolution}`;
+        const resLabel = document.getElementById('locked-resolution-val');
+        if (resLabel) resLabel.innerText = resText;
+
         canvasEditor.init(active[0], 'drawing-canvas');
         this.renderDrawingReel();
     },
@@ -301,14 +368,23 @@ const app = {
     },
 
     setTool(tool) {
-        state.isEraser = (tool === 'eraser');
-        document.getElementById('tool-eraser').classList.toggle('active', state.isEraser);
-        document.getElementById('tool-brush').classList.toggle('active', !state.isEraser);
+        state.activeTool = tool;
+        document.querySelectorAll('.tool-btn-small').forEach(btn => btn.classList.remove('active'));
+        
+        const btnId = tool === 'eyedropper' ? 'tool-eyedropper' : `tool-${tool}`;
+        const btn = document.getElementById(btnId);
+        if (btn) btn.classList.add('active');
+        
+        // Visual cursor feedback
+        const canvas = document.getElementById('drawing-canvas');
+        if (canvas) {
+            canvas.style.cursor = tool === 'eyedropper' ? 'crosshair' : 'none';
+        }
     },
 
-    updateBrushSize(val) {
-        state.brushSize = val;
-        document.getElementById('brush-size-val').innerText = val;
+    updateBrushSize(size) {
+        state.brushSize = size;
+        document.getElementById('brush-size-val').innerText = size;
     },
 
     async exportSheet() {
@@ -335,25 +411,48 @@ const app = {
 const canvasEditor = {
     canvas: null,
     ctx: null,
+    cursorCanvas: null,
+    cursorCtx: null,
     currentFrame: null,
     history: [],
     historyIdx: -1,
     isDrawing: false,
+    zoom: 1.0,
 
     init(frame, canvasId = 'editor-canvas') {
+        const active = state.frames.filter(f => f.active);
+        const idx = active.indexOf(frame);
+        
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
-        this.loadFrame(0);
+        
+        // Secondary canvas for cursor highlights
+        const cursorId = canvasId === 'editor-canvas' ? 'cursor-canvas-editor' : 'cursor-canvas';
+        this.cursorCanvas = document.getElementById(cursorId);
+        if (this.cursorCanvas) {
+            this.cursorCtx = this.cursorCanvas.getContext('2d');
+        }
 
-        this.canvas.onmousedown = (e) => this.startDraw(e);
-        window.onmousemove = (e) => this.draw(e);
-        window.onmouseup = () => this.stopDraw();
+        this.attachListeners();
+        this.loadFrame(idx >= 0 ? idx : 0);
 
-        if (canvasId === 'editor-canvas') this.initResize();
+        if (canvasId === 'editor-canvas') this.initResize('mini-preview-panel');
+        if (canvasId === 'drawing-canvas') this.initResize('mini-preview-panel-drawing');
     },
 
-    initResize() {
-        const panel = document.getElementById('mini-preview-panel');
+    attachListeners() {
+        this.canvas.onmousedown = (e) => this.startDraw(e);
+        this._boundDraw = (e) => this.draw(e);
+        this._boundStop = () => this.stopDraw();
+        
+        window.addEventListener('mousemove', this._boundDraw);
+        window.addEventListener('mouseup', this._boundStop);
+    },
+
+    initResize(panelId = 'mini-preview-panel') {
+        const panel = document.getElementById(panelId);
+        if (!panel || panel._resizeInitialized) return; 
+        
         const handle = panel.querySelector('.resize-handle');
         let isResizing = false;
 
@@ -374,6 +473,7 @@ const canvasEditor = {
         window.addEventListener('mouseup', () => {
             isResizing = false;
         });
+        panel._resizeInitialized = true;
     },
 
     startMiniLoop() {
@@ -384,14 +484,15 @@ const canvasEditor = {
             if (!activeFrames.length) return;
             
             const frame = activeFrames[state.miniLoopFrameIdx];
-            const imgEl = document.getElementById('mini-loop-img');
             
-            // Real-time: if this is the CURRENT frame, we could show canvas data,
-            // but the requirement is "mini preview to show the looping animation".
-            // So we show the latest base64 data (which we update on save or reprocess).
-            if (imgEl && frame.base64) {
-                imgEl.src = 'data:image/png;base64,' + frame.base64;
-            }
+            // Sync multiple preview targets
+            const targets = ['mini-loop-img', 'mini-loop-img-drawing'];
+            targets.forEach(id => {
+                const imgEl = document.getElementById(id);
+                if (imgEl && frame.base64) {
+                    imgEl.src = 'data:image/png;base64,' + frame.base64;
+                }
+            });
             
             state.miniLoopFrameIdx = (state.miniLoopFrameIdx + 1) % activeFrames.length;
         };
@@ -406,14 +507,57 @@ const canvasEditor = {
 
     loadFrame(idx, resetDrawing = true) {
         const active = state.frames.filter(f => f.active);
+        if (idx < 0 || idx >= active.length) {
+            console.warn("Invalid frame index requested:", idx);
+            return;
+        }
+        
         this.currentFrame = active[idx];
+        if (!this.currentFrame || !this.currentFrame.base64) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            return;
+        }
         
         const img = new Image();
         img.onload = () => {
             this.canvas.width = img.width;
             this.canvas.height = img.height;
+            
+            if (this.cursorCanvas) {
+                this.cursorCanvas.width = img.width;
+                this.cursorCanvas.height = img.height;
+            }
+            
+            // PIXEL PERFECT SETUP
+            this.ctx.imageSmoothingEnabled = false;
+            this.ctx.mozImageSmoothingEnabled = false;
+            this.ctx.webkitImageSmoothingEnabled = false;
+            this.ctx.msImageSmoothingEnabled = false;
+
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.drawImage(img, 0, 0);
+
+            // AUTO-ZOOM for small sprites
+            if (img.width > 0 && img.width <= 128) {
+                // Measure the actual visible area (canvas-panel)
+                const panel = this.canvas.closest('.canvas-panel');
+                const panelWidth = panel.clientWidth;
+                const panelHeight = panel.clientHeight;
+                
+                // Zoom to fit ~70% of the smallest dimension
+                const targetZoom = Math.min(
+                    (panelWidth * 0.7) / img.width,
+                    (panelHeight * 0.7) / img.height
+                );
+                this.zoom = Math.max(1, Math.min(10, targetZoom));
+                this.updateZoomDisplay();
+            } else if (resetDrawing) {
+                this.resetZoom();
+            } else {
+                // If not auto-zooming, still ensure scaling is applied to the new img
+                this.updateZoomDisplay();
+            }
+
             if (resetDrawing) {
                 this.history = [];
                 this.historyIdx = -1;
@@ -431,18 +575,125 @@ const canvasEditor = {
         this.draw(e);
     },
 
-    draw(e) {
-        if (!this.isDrawing) return;
+    startDraw(e) {
+        if (!this.currentFrame) return;
+        this.isDrawing = true;
+        
+        const pos = this.getPixelPos(e);
+        this.lastPixel = pos;
+        
+        if (state.activeTool === 'eyedropper') {
+            this.pickColor(e);
+        } else {
+            this.paintPixel(pos.x, pos.y);
+        }
+    },
+
+    getPixelPos(e) {
         const rect = this.canvas.getBoundingClientRect();
         const scaleX = this.canvas.width / rect.width;
         const scaleY = this.canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
+        return {
+            x: Math.floor((e.clientX - rect.left) * scaleX),
+            y: Math.floor((e.clientY - rect.top) * scaleY)
+        };
+    },
 
-        this.ctx.globalCompositeOperation = state.isEraser ? 'destination-out' : 'source-over';
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, state.brushSize / 2, 0, Math.PI * 2);
-        this.ctx.fill();
+    draw(e) {
+        if (!this.canvas) return;
+        const pos = this.getPixelPos(e);
+        this.updateBrushCursor(e, pos);
+
+        if (!this.isDrawing) return;
+        
+        if (state.activeTool === 'eyedropper') {
+            this.pickColor(e);
+            return;
+        }
+
+        // Bresenham's to connect pixels
+        if (this.lastPixel) {
+            this.line(this.lastPixel.x, this.lastPixel.y, pos.x, pos.y);
+        }
+        this.lastPixel = pos;
+    },
+
+    line(x0, y0, x1, y1) {
+        const dx = Math.abs(x1 - x0);
+        const dy = Math.abs(y1 - y0);
+        const sx = (x0 < x1) ? 1 : -1;
+        const sy = (y0 < y1) ? 1 : -1;
+        let err = dx - dy;
+
+        while (true) {
+            this.paintPixel(x0, y0);
+            if (x0 === x1 && y0 === y1) break;
+            const e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 < dx) { err += dx; y0 += sy; }
+        }
+    },
+
+    paintPixel(x, y) {
+        this.ctx.globalCompositeOperation = state.activeTool === 'eraser' ? 'destination-out' : 'source-over';
+        this.ctx.fillStyle = state.brushColor;
+        
+        // Brush size as pixel block
+        // Brush size logic: 1-10 = 1px, 11-20 = 2px, etc.
+        const size = Math.floor((state.brushSize - 0.1) / 10) + 1;
+        if (size === 1) {
+            this.ctx.fillRect(x, y, 1, 1);
+        } else {
+            const offset = Math.floor(size / 2);
+            this.ctx.fillRect(x - offset, y - offset, size, size);
+        }
+    },
+
+    updateBrushCursor(e, pixelPos) {
+        if (!this.cursorCtx) return;
+        
+        // Clear previous highlight
+        this.cursorCtx.clearRect(0, 0, this.cursorCanvas.width, this.cursorCanvas.height);
+
+        const rect = this.canvas.getBoundingClientRect();
+        const isInCanvas = (
+            e.clientX >= rect.left && 
+            e.clientX <= rect.right && 
+            e.clientY >= rect.top && 
+            e.clientY <= rect.bottom
+        );
+
+        if (isInCanvas && state.activeTool !== 'eyedropper') {
+            const size = Math.floor((state.brushSize - 0.1) / 10) + 1;
+            
+            this.cursorCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            
+            if (size === 1) {
+                this.cursorCtx.fillRect(pixelPos.x, pixelPos.y, 1, 1);
+            } else {
+                const offset = Math.floor(size / 2);
+                this.cursorCtx.fillRect(pixelPos.x - offset, pixelPos.y - offset, size, size);
+            }
+        }
+    },
+
+    pickColor(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+        const x = Math.floor((e.clientX - rect.left) * scaleX);
+        const y = Math.floor((e.clientY - rect.top) * scaleY);
+
+        const pixel = this.ctx.getImageData(x, y, 1, 1).data;
+        if (pixel[3] === 0) return; // Transparent
+
+        const hex = '#' + Array.from(pixel.slice(0, 3))
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('');
+        
+        state.brushColor = hex;
+        document.getElementById('brush-color').value = hex;
+        this.setTool('brush');
     },
 
     stopDraw() {
@@ -458,9 +709,18 @@ const canvasEditor = {
     },
 
     saveHistory() {
+        // Clear redo states if we act from middle
         this.history = this.history.slice(0, this.historyIdx + 1);
+        
+        // Push new state
         this.history.push(this.canvas.toDataURL());
         this.historyIdx++;
+
+        // LIMIT to 20 steps
+        if (this.history.length > 20) {
+            this.history.shift();
+            this.historyIdx--;
+        }
     },
 
     undo() {
@@ -511,9 +771,13 @@ const canvasEditor = {
     },
 
     updateZoomDisplay() {
-        const wrapper = document.querySelector('.canvas-wrapper');
+        const wrapper = this.canvas.parentElement; // Scoped to active canvas
         wrapper.style.transform = `scale(${this.zoom})`;
-        document.getElementById('zoom-level').innerText = Math.round(this.zoom * 100) + '%';
+        
+        // Update all visible zoom indicators
+        document.querySelectorAll('.zoom-level, #zoom-level').forEach(el => {
+            el.innerText = Math.round(this.zoom * 100) + '%';
+        });
     },
 
     async reprocessBackground() {
@@ -527,9 +791,15 @@ const canvasEditor = {
         const threshold = document.getElementById('threshold-slider').value;
         const active = state.frames.filter(f => f.active);
         
-        // Show loading state
-        document.getElementById('proceed-btn').innerText = "Processing...";
-        document.getElementById('proceed-btn').disabled = true;
+        // Show loading state on the CURRENT screen's button
+        const nextBtn = document.getElementById('next-btn');
+        const thresholdBtn = document.getElementById('apply-threshold-btn');
+        const originalText = nextBtn.innerText;
+        
+        nextBtn.innerText = "Processing...";
+        nextBtn.disabled = true;
+        thresholdBtn.innerText = "Processing...";
+        thresholdBtn.disabled = true;
 
         for (const frame of active) {
             await this.processFrame(frame, threshold);
@@ -538,8 +808,45 @@ const canvasEditor = {
         // Restore UI
         app.renderEditorReel();
         this.loadFrame(state.frames.filter(f => f.active).indexOf(this.currentFrame), false);
-        document.getElementById('next-btn').innerText = "Next";
-        document.getElementById('next-btn').disabled = false;
+        nextBtn.innerText = originalText;
+        nextBtn.disabled = false;
+        document.getElementById('apply-threshold-btn').innerText = "Apply All";
+        document.getElementById('apply-threshold-btn').disabled = false;
+    },
+
+    async syncResolution(val) {
+        state.targetResolution = parseInt(val);
+        
+        // Only the main selector exists now
+        const ui1 = document.getElementById('resolution-selector');
+        if (ui1) ui1.value = val;
+        
+        await this.applyResolutionToAll();
+    },
+
+    async applyResolutionToAll() {
+        const threshold = document.getElementById('threshold-slider').value;
+        const active = state.frames.filter(f => f.active);
+        
+        const nextBtn = document.getElementById('next-btn');
+        const selector = document.getElementById('resolution-selector');
+        
+        const originalNextText = nextBtn.innerText;
+        nextBtn.innerText = "Processing Assets...";
+        nextBtn.disabled = true;
+        if (selector) selector.disabled = true;
+
+        for (const frame of active) {
+            await this.processFrame(frame, threshold);
+        }
+
+        // Restore UI
+        app.renderEditorReel();
+        this.loadFrame(state.frames.filter(f => f.active).indexOf(this.currentFrame), false);
+        
+        nextBtn.innerText = originalNextText;
+        nextBtn.disabled = false;
+        if (selector) selector.disabled = false;
     },
 
     async processFrame(frame, threshold) {
@@ -549,7 +856,8 @@ const canvasEditor = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 path: frame.path,
-                threshold: threshold
+                threshold: threshold,
+                resolution: state.targetResolution
             })
         });
         const data = await resp.json();

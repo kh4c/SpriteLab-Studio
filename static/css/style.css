@@ -604,52 +604,145 @@ h1 span {
     opacity: 0.4;
 }
 
-/* Range Sliders */
+/* Tool Layout & Icons */
+.tool-grid {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tool-btn-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tool-btn-small:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-normal);
+    transform: scale(1.05);
+}
+
+.tool-btn-small.active {
+    background: var(--blurple);
+    color: #fff;
+    border-color: var(--blurple);
+}
+
+.tool-btn-small svg {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Color Picker */
+.color-picker-wrapper {
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+input[type="color"] {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    width: 150%;
+    height: 150%;
+    cursor: pointer;
+    background: none;
+    padding: 0;
+    margin: -25%;
+}
+
+/* Interactive Brush Cursor */
+.canvas-wrapper {
+    position: relative;
+    cursor: none;
+    border: 1px solid var(--blurple); /* High-visibility boundary */
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    line-height: 0; /* Prevents tiny gap at bottom */
+}
+
+.canvas-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+}
+
+
+#cursor-canvas, #cursor-canvas-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    image-rendering: pixelated;
+    z-index: 10;
+}
+
+/* Range Sliders - Discord Refinement */
 input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
-    height: 8px;
+    height: 4px;
     background: var(--bg-tertiary);
-    border-radius: 4px;
+    border-radius: 2px;
     outline: none;
+    margin: 12px 0;
 }
 
 input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    background: var(--blurple);
+    width: 14px;
+    height: 14px;
+    background: #fff;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    border: 2px solid #fff;
+    box-shadow: 0 0 5px rgba(0,0,0,0.4);
+    transition: transform 0.1s;
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.2);
 }
 
 .slider-group label {
     display: block;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
+    margin-bottom: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
     color: var(--text-muted);
+    text-transform: uppercase;
 }
 
-/* Threshold Mega Slider */
+/* Threshold Mega Slider - Keeping it prominent but matching Discord */
 .threshold-mega input[type="range"] {
-    height: 24px;
+    height: 6px;
     background: var(--bg-floating);
-    border: 1px solid var(--border-color);
 }
 
 .threshold-mega input[type="range"]::-webkit-slider-thumb {
-    width: 32px;
-    height: 32px;
-    background: var(--header-primary);
+    width: 18px;
+    height: 18px;
+    background: var(--blurple);
 }
 
 .threshold-mega label {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: 800;
     color: var(--header-primary);
+    text-transform: none;
 }
 
 /* Editor Layout - Final Refined */
@@ -681,11 +774,13 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .tools-panel {
-    width: 350px;
+    width: 340px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 20px;
     padding: 24px !important;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
 }
 
 .bottom-reel-panel {
@@ -751,6 +846,12 @@ input[type="range"]::-webkit-slider-thumb {
     position: relative; /* For mini preview positioning */
 }
 
+.canvas-wrapper {
+    display: block;
+    transform-origin: center;
+    transition: transform 0.1s ease-out;
+}
+
 /* Mini Preview Panel */
 .mini-preview-panel {
     position: absolute;
@@ -787,7 +888,7 @@ input[type="range"]::-webkit-slider-thumb {
     justify-content: center;
 }
 
-#mini-loop-img {
+.mini-loop-container img {
     width: 100%;
     height: 100%;
     object-fit: contain;
