@@ -315,6 +315,12 @@ const app = {
         const active = state.frames.filter(f => f.active);
         if (!active.length) return alert("Select at least one frame!");
         
+        // Before starting, sync UI slider to the Default Threshold
+        const slider = document.getElementById('threshold-slider');
+        const valText = document.getElementById('threshold-val');
+        if (slider) slider.value = state.defaultThreshold;
+        if (valText) valText.innerText = state.defaultThreshold;
+
         this.navigate('editor');
         
         // Initialize editor with first frame
