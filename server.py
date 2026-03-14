@@ -44,6 +44,21 @@ def upload_video():
     frames = extract_keyframes(video_path, out_dir, count=target_count)
     return jsonify({"frames": frames, "video_name": video_path.stem})
 
+@app.route("/api/demo", methods=["POST"])
+def demo_mode():
+    # Hardcoded test path
+    video_path = Path(r"C:\Users\user\Desktop\live2d project\SpriteLab\test2.mp4")
+    if not video_path.exists():
+        return jsonify({"error": "Demo video not found"}), 404
+        
+    target_count = int(request.form.get("target_count", 12))
+    out_dir = UPLOAD_FOLDER / video_path.stem
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    
+    frames = extract_keyframes(video_path, out_dir, count=target_count)
+    return jsonify({"frames": frames, "video_name": video_path.stem})
+
 @app.route("/api/remove-bg", methods=["POST"])
 def remove_bg():
     data = request.json

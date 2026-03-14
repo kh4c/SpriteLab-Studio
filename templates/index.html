@@ -21,7 +21,7 @@
                 <div class="nav-item" onclick="app.navigate('welcome')">
                     Sprite Maker
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" onclick="app.navigate('settings')" id="nav-settings">
                     <span class="nav-icon">⚙️</span> Settings
                 </div>
             </div>
@@ -74,10 +74,10 @@
                                     <h3>New Project</h3>
                                     <p>Start a new Sprite Maker session</p>
                                 </div>
-                                <div class="stat-card">
-                                    <div class="stat-icon">📁</div>
-                                    <h3>Recent Exports</h3>
-                                    <p>Browse your finished assets</p>
+                                <div class="stat-card" onclick="app.startDemo()">
+                                    <div class="stat-icon">🧪</div>
+                                    <h3>Demo Mode</h3>
+                                    <p>Load test2.mp4 instantly</p>
                                 </div>
                             </div>
                         </div>
@@ -160,56 +160,103 @@
                 <!-- Section 3: Matte Editor -->
                 <section id="editor-screen">
                     <div class="editor-layout">
-                        <div class="canvas-panel glass-card">
-                            <div class="canvas-wrapper">
-                                <canvas id="editor-canvas"></canvas>
-                                <div class="canvas-overlay"></div>
+                        <div class="editor-top-row">
+                            <div class="canvas-panel glass-card">
+                                <div class="canvas-wrapper">
+                                    <canvas id="editor-canvas"></canvas>
+                                    <div class="canvas-overlay"></div>
+                                </div>
+                                
+                                <!-- Mini Preview Overlay -->
+                                <div id="mini-preview-panel" class="mini-preview-panel glass-card">
+                                    <div class="mini-preview-header">
+                                        <span>Real-time Loop</span>
+                                    </div>
+                                    <div class="mini-loop-container">
+                                        <img id="mini-loop-img" src="" alt="Mini Preview">
+                                    </div>
+                                    <div class="resize-handle"></div>
+                                </div>
+                            </div>
+
+                            <div class="tools-panel glass-card">
+                                <div class="tools-header">
+                                    <h3>Matte Cleanup</h3>
+                                    <button class="btn-secondary btn-small" onclick="app.navigate('selection')">Back</button>
+                                </div>
+
+                                <div class="slider-group threshold-mega">
+                                    <div class="label-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <label>Threshold: <span id="threshold-val">25</span></label>
+                                        <button class="btn-secondary btn-small" onclick="canvasEditor.applyThresholdToAll()">Apply All</button>
+                                    </div>
+                                    <input type="range" id="threshold-slider" min="1" max="100" value="25" onchange="canvasEditor.reprocessBackground()">
+                                </div>
+
+                                <div class="tool-group zoom-tools">
+                                    <button class="btn-secondary" onclick="canvasEditor.zoomCanvas(0.1)">+</button>
+                                    <button class="btn-secondary" onclick="canvasEditor.zoomCanvas(-0.1)">-</button>
+                                    <button class="btn-secondary" onclick="canvasEditor.resetZoom()">Reset</button>
+                                    <span id="zoom-level">100%</span>
+                                </div>
+
+                                <div class="action-row">
+                                    <button class="btn-primary btn-large" id="next-btn" onclick="app.startDrawing()">Next Phase</button>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="tools-panel glass-card">
-                            <div class="tools-header">
-                                <h3>Matte Cleanup</h3>
-                                <button class="btn-secondary btn-small" onclick="app.navigate('selection')">Back</button>
-                            </div>
-                            
-                            <div class="tool-group">
-                                <button class="tool-btn active" id="tool-eraser">Eraser</button>
-                                <button class="tool-btn" id="tool-brush">Brush</button>
-                            </div>
-
-                            <div class="slider-group">
-                                <label>Brush Size: <span id="brush-size-val">20</span></label>
-                                <input type="range" id="brush-size" min="1" max="100" value="20">
-                            </div>
-
-                            <div class="slider-group">
-                                <label>Threshold: <span id="threshold-val">25</span></label>
-                                <input type="range" id="threshold-slider" min="1" max="100" value="25" onchange="canvasEditor.reprocessBackground()">
-                            </div>
-
-                            <div class="tool-group zoom-tools">
-                                <button class="btn-secondary" onclick="canvasEditor.zoomCanvas(0.1)">+</button>
-                                <button class="btn-secondary" onclick="canvasEditor.zoomCanvas(-0.1)">-</button>
-                                <button class="btn-secondary" onclick="canvasEditor.resetZoom()">Reset</button>
-                                <span id="zoom-level">100%</span>
-                            </div>
-
-                            <div class="history-group">
-                                <button onclick="canvasEditor.undo()">Undo</button>
-                                <button onclick="canvasEditor.redo()">Redo</button>
-                            </div>
-
-                            <div id="editor-reel" class="frame-reel mini"></div>
-
-                            <div class="action-row">
-                                <button class="btn-primary" id="export-btn">Generate Spritesheet</button>
-                            </div>
+                        
+                        <div class="bottom-reel-panel glass-card">
+                            <div id="editor-reel" class="frame-reel"></div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Section 4: Export -->
+                <!-- Section 4: Fine Drawing / Editing -->
+                <section id="drawing-screen">
+                    <div class="editor-layout">
+                        <div class="editor-top-row">
+                            <div class="canvas-panel glass-card">
+                                <div class="canvas-wrapper">
+                                    <canvas id="drawing-canvas"></canvas>
+                                    <div class="canvas-overlay"></div>
+                                </div>
+                            </div>
+
+                            <div class="tools-panel glass-card">
+                                <div class="tools-header">
+                                    <h3>Fine Editing</h3>
+                                    <button class="btn-secondary btn-small" onclick="app.navigate('editor')">Back</button>
+                                </div>
+                                
+                                <div class="tool-group">
+                                    <button class="tool-btn active" id="tool-eraser">Eraser</button>
+                                    <button class="tool-btn" id="tool-brush">Brush</button>
+                                </div>
+
+                                <div class="slider-group">
+                                    <label>Brush Size: <span id="brush-size-val">20</span></label>
+                                    <input type="range" id="brush-size" min="1" max="100" value="20">
+                                </div>
+
+                                <div class="history-group">
+                                    <button class="btn-secondary" onclick="canvasEditor.undo()">Undo</button>
+                                    <button class="btn-secondary" onclick="canvasEditor.redo()">Redo</button>
+                                </div>
+
+                                <div class="action-row">
+                                    <button class="btn-primary btn-large" id="export-btn" onclick="app.exportSheet()">Generate Spritesheet</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bottom-reel-panel glass-card">
+                            <div id="drawing-reel" class="frame-reel"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 5: Export -->
                 <section id="export-screen">
                     <div class="glass-card export-card">
                         <h2>Asset Ready</h2>
@@ -219,6 +266,30 @@
                         <div class="action-row">
                             <a id="download-link" href="#" download="spritesheet.png" class="btn-primary">Download PNG</a>
                             <button class="btn-secondary" onclick="location.reload()">New Project</button>
+                        </div>
+                    </div>
+                </section>
+                <!-- Section 5: Settings -->
+                <section id="settings-screen">
+                    <div class="glass-card main-hero">
+                        <h1>Settings</h1>
+                        <p class="subtitle">Global application preferences.</p>
+                        
+                        <div class="settings-grid">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <label>Default Threshold</label>
+                                    <p>The starting sensitivity for background removal.</p>
+                                </div>
+                                <div class="setting-control">
+                                    <input type="number" id="setting-default-threshold" min="1" max="100" value="8">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn-primary" onclick="app.saveSettings()">Save Preferences</button>
+                            <button class="btn-secondary" onclick="app.navigate('hub')">Discard Changes</button>
                         </div>
                     </div>
                 </section>

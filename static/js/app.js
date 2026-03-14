@@ -6,13 +6,17 @@ const state = {
     brushSize: 20,
     isEraser: true,
     loopInterval: null,
-    loopFrameIdx: 0
+    loopFrameIdx: 0,
+    defaultThreshold: 8,
+    miniLoopInterval: null,
+    miniLoopFrameIdx: 0
 };
 
 const app = {
     init() {
         console.log("SpriteLab Hub v2.0 (Discord Theme) Initializing...");
         console.log("Sidebar element:", document.querySelector('.sidebar'));
+        this.loadSettings();
         this.initTheme();
         this.bindEvents();
         this.updateFrameCountDisplay();
@@ -57,6 +61,7 @@ const app = {
             'welcome': 'Sprite Maker / Ingest',
             'selection': 'Sprite Maker / Refine',
             'editor': 'Sprite Maker / Cleanup',
+            'drawing': 'Sprite Maker / Fine Edit',
             'export': 'Sprite Maker / Result'
         };
         document.getElementById('breadcrumb').innerText = titles[screenId] || 'SpriteLab';
@@ -75,9 +80,13 @@ const app = {
 
         if (screenId === 'selection') {
             this.renderReel('frame-reel');
+            state.loopFrameIdx = 0; // Reset index to show first frame
             this.startLoop();
+        } else if (screenId === 'editor') {
+            canvasEditor.startMiniLoop();
         } else {
             this.stopLoop();
+            canvasEditor.stopMiniLoop();
         }
     },
 
@@ -94,6 +103,18 @@ const app = {
         document.body.setAttribute('data-theme', saved);
     },
 
+    loadSettings() {
+        const saved = localStorage.getItem('spritelab-threshold');
+        if (saved) state.defaultThreshold = parseInt(saved);
+        document.getElementById('setting-default-threshold').value = state.defaultThreshold;
+    },
+
+    saveSettings() {
+        state.defaultThreshold = parseInt(document.getElementById('setting-default-threshold').value);
+        localStorage.setItem('spritelab-threshold', state.defaultThreshold);
+        this.navigate('hub');
+    },
+
     handleFileSelection(file) {
         state.selectedFile = file;
         
@@ -101,6 +122,7 @@ const app = {
         const video = document.getElementById('upload-preview');
         const url = URL.createObjectURL(file);
         video.src = url;
+        video.play().catch(e => console.warn("Auto-play blocked:", e));
         
         document.getElementById('upload-prompt').classList.add('hidden');
         document.getElementById('video-preview-container').classList.remove('hidden');
@@ -147,6 +169,22 @@ const app = {
         }
     },
 
+    async startDemo() {
+        const formData = new FormData();
+        formData.append('target_count', state.targetCount);
+
+        try {
+            const resp = await fetch('/api/demo', { method: 'POST', body: formData });
+            const data = await resp.json();
+            state.frames = data.frames.map(f => ({ ...f, active: true }));
+            state.videoName = data.video_name;
+            this.navigate('selection');
+        } catch (err) {
+            console.error("Demo failed", err);
+            alert("Demo failed.");
+        }
+    },
+
     renderReel(containerId) {
         const reel = document.getElementById(containerId);
         reel.innerHTML = '';
@@ -156,11 +194,9 @@ const app = {
             
             // Normalize path for consistent URL generation
             let path = f.path.replace(/\\/g, '/');
-            if (path.startsWith('output/')) {
-                path = path.slice(7);
-            }
+            const relPath = path.includes('output/') ? path.split('output/').pop() : path;
             
-            item.style.backgroundImage = `url(/output/${path})`;
+            item.style.backgroundImage = `url(/output/${relPath})`;
             item.onclick = () => this.toggleFrame(i, item);
             reel.appendChild(item);
         });
@@ -178,10 +214,15 @@ const app = {
         const updatePreview = () => {
             const activeFrames = state.frames.filter(f => f.active);
             if (!activeFrames.length) return;
-            state.loopFrameIdx = (state.loopFrameIdx + 1) % activeFrames.length;
-            let rel = activeFrames[state.loopFrameIdx].path.replace(/\\/g, '/');
+            
+            const frame = activeFrames[state.loopFrameIdx];
+            let rel = frame.path.replace(/\\/g, '/');
             if (rel.includes('output/')) rel = rel.split('output/').pop();
-            document.getElementById('loop-preview').src = `/output/${rel}`;
+            
+            const imgEl = document.getElementById('loop-preview');
+            if (imgEl) imgEl.src = `/output/${rel}`;
+            
+            state.loopFrameIdx = (state.loopFrameIdx + 1) % activeFrames.length;
         };
 
         updatePreview();
@@ -193,24 +234,52 @@ const app = {
     },
 
     async startCleanup() {
-        this.navigate('editor');
         const active = state.frames.filter(f => f.active);
+        if (!active.length) return alert("Select at least one frame!");
+        
+        this.navigate('editor');
+        // Initial placeholder message or spinner could go here
         
         // Batch process BG removal
         for (let i = 0; i < active.length; i++) {
             const resp = await fetch('/api/remove-bg', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: active[i].path })
+                body: JSON.stringify({ 
+                    path: active[i].path,
+                    threshold: state.defaultThreshold
+                })
             });
             const data = await resp.json();
             active[i].clean_path = data.clean_path;
             active[i].base64 = data.base64;
             
             if (i === 0) canvasEditor.init(active[0]);
+            this.renderEditorReel(); // Update reel as we go
         }
-        
-        this.renderEditorReel();
+    },
+
+    startDrawing() {
+        this.navigate('drawing');
+        const active = state.frames.filter(f => f.active);
+        canvasEditor.init(active[0], 'drawing-canvas');
+        this.renderDrawingReel();
+    },
+
+    renderDrawingReel() {
+        const active = state.frames.filter(f => f.active);
+        const reel = document.getElementById('drawing-reel');
+        reel.innerHTML = '';
+        active.forEach((f, i) => {
+            const item = document.createElement('div');
+            item.className = 'frame-item';
+            let path = (f.clean_path || f.path).replace(/\\/g, '/');
+            const relPath = path.includes('output/') ? path.split('output/').pop() : path;
+            const t = new Date().getTime();
+            item.style.backgroundImage = `url(/output/${relPath}?t=${t})`;
+            item.onclick = () => canvasEditor.loadFrame(i);
+            reel.appendChild(item);
+        });
     },
 
     renderEditorReel() {
@@ -220,7 +289,12 @@ const app = {
         active.forEach((f, i) => {
             const item = document.createElement('div');
             item.className = 'frame-item';
-            item.style.backgroundImage = `url(/output/${f.path.split('output/')[1]})`;
+            
+            let path = (f.clean_path || f.path).replace(/\\/g, '/');
+            const relPath = path.includes('output/') ? path.split('output/').pop() : path;
+
+            const t = new Date().getTime();
+            item.style.backgroundImage = `url(/output/${relPath}?t=${t})`;
             item.onclick = () => canvasEditor.loadFrame(i);
             reel.appendChild(item);
         });
@@ -266,14 +340,68 @@ const canvasEditor = {
     historyIdx: -1,
     isDrawing: false,
 
-    init(frame) {
-        this.canvas = document.getElementById('editor-canvas');
+    init(frame, canvasId = 'editor-canvas') {
+        this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext('2d');
         this.loadFrame(0);
 
         this.canvas.onmousedown = (e) => this.startDraw(e);
         window.onmousemove = (e) => this.draw(e);
         window.onmouseup = () => this.stopDraw();
+
+        if (canvasId === 'editor-canvas') this.initResize();
+    },
+
+    initResize() {
+        const panel = document.getElementById('mini-preview-panel');
+        const handle = panel.querySelector('.resize-handle');
+        let isResizing = false;
+
+        handle.onmousedown = (e) => {
+            isResizing = true;
+            e.preventDefault();
+        };
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const rect = panel.getBoundingClientRect();
+            const newW = e.clientX - rect.left;
+            const newH = e.clientY - rect.top;
+            panel.style.width = Math.max(80, newW) + 'px';
+            panel.style.height = Math.max(80, newH) + 'px';
+        });
+
+        window.addEventListener('mouseup', () => {
+            isResizing = false;
+        });
+    },
+
+    startMiniLoop() {
+        if (state.miniLoopInterval) clearInterval(state.miniLoopInterval);
+        
+        const updateMini = () => {
+            const activeFrames = state.frames.filter(f => f.active);
+            if (!activeFrames.length) return;
+            
+            const frame = activeFrames[state.miniLoopFrameIdx];
+            const imgEl = document.getElementById('mini-loop-img');
+            
+            // Real-time: if this is the CURRENT frame, we could show canvas data,
+            // but the requirement is "mini preview to show the looping animation".
+            // So we show the latest base64 data (which we update on save or reprocess).
+            if (imgEl && frame.base64) {
+                imgEl.src = 'data:image/png;base64,' + frame.base64;
+            }
+            
+            state.miniLoopFrameIdx = (state.miniLoopFrameIdx + 1) % activeFrames.length;
+        };
+
+        updateMini();
+        state.miniLoopInterval = setInterval(updateMini, 120);
+    },
+
+    stopMiniLoop() {
+        clearInterval(state.miniLoopInterval);
     },
 
     loadFrame(idx, resetDrawing = true) {
@@ -290,6 +418,9 @@ const canvasEditor = {
                 this.history = [];
                 this.historyIdx = -1;
                 this.saveHistory();
+            } else {
+                // If not resetting, we should at least check if history needs update
+                // but usually we reset when moving between Phase 1 and 2
             }
         };
         img.src = 'data:image/png;base64,' + this.currentFrame.base64;
@@ -315,7 +446,14 @@ const canvasEditor = {
     },
 
     stopDraw() {
-        if (this.isDrawing) this.saveHistory();
+        if (this.isDrawing) {
+            this.saveHistory();
+            // Real-time update for mini loop: sync canvas data back to frame state
+            if (this.currentFrame) {
+                const dataUrl = this.canvas.toDataURL();
+                this.currentFrame.base64 = dataUrl.split(',')[1];
+            }
+        }
         this.isDrawing = false;
     },
 
@@ -380,19 +518,43 @@ const canvasEditor = {
 
     async reprocessBackground() {
         const threshold = document.getElementById('threshold-slider').value;
-        document.getElementById('threshold-val').innerText = threshold;
+        await this.processFrame(this.currentFrame, threshold);
+        app.renderEditorReel(); // Refresh the reel thumbnails
+        this.loadFrame(state.frames.filter(f => f.active).indexOf(this.currentFrame), false);
+    },
+
+    async applyThresholdToAll() {
+        const threshold = document.getElementById('threshold-slider').value;
+        const active = state.frames.filter(f => f.active);
         
+        // Show loading state
+        document.getElementById('proceed-btn').innerText = "Processing...";
+        document.getElementById('proceed-btn').disabled = true;
+
+        for (const frame of active) {
+            await this.processFrame(frame, threshold);
+        }
+
+        // Restore UI
+        app.renderEditorReel();
+        this.loadFrame(state.frames.filter(f => f.active).indexOf(this.currentFrame), false);
+        document.getElementById('next-btn').innerText = "Next";
+        document.getElementById('next-btn').disabled = false;
+    },
+
+    async processFrame(frame, threshold) {
+        document.getElementById('threshold-val').innerText = threshold;
         const resp = await fetch('/api/remove-bg', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                path: this.currentFrame.path,
+                path: frame.path,
                 threshold: threshold
             })
         });
         const data = await resp.json();
-        this.currentFrame.base64 = data.base64;
-        this.loadFrame(state.frames.filter(f => f.active).indexOf(this.currentFrame), false);
+        frame.base64 = data.base64;
+        frame.clean_path = data.clean_path;
     }
 };
 
