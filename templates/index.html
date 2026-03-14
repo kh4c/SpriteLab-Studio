@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpriteLab - Studio Grade 2D Asset Tool</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+    <div id="app-container">
+        <!-- Persistent Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header" onclick="app.navigate('hub')">
+                SpriteLab Studio
+            </div>
+            <div class="sidebar-content">
+                <div class="nav-item active" onclick="app.navigate('hub')">
+                    Home
+                </div>
+                <div class="nav-item" onclick="app.navigate('welcome')">
+                    Sprite Maker
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">⚙️</span> Settings
+                </div>
+            </div>
+            <!-- User Profile Section -->
+            <div class="user-profile">
+                <div class="user-avatar">SL</div>
+                <div class="user-info">
+                    <div class="user-name">Guest Artist</div>
+                    <div class="user-status">Studio Tier</div>
+                </div>
+                <div class="user-settings-icon">⚙️</div>
+            </div>
+        </aside>
+
+        <!-- Main View Area -->
+        <main id="main-view">
+            <header class="global-header">
+                <div class="header-title">
+                    <span id="breadcrumb">Home</span>
+                </div>
+                <div class="header-controls">
+                    <div class="theme-toggle" id="theme-toggle" onclick="app.toggleTheme()">Theme</div>
+                </div>
+            </header>
+
+            <div id="app">
+                <!-- Section 0: The Hub -->
+                <section id="hub-screen">
+                    <div class="hub-container">
+                        <div class="hub-sidebar-left">
+                            <div class="server-banner">
+                                <div class="banner-text">SpriteLab Studio</div>
+                            </div>
+                            <div class="channel-category">Assets</div>
+                            <div class="channel-item active" onclick="app.navigate('hub')">
+                                <span class="hash">#</span> dashboard
+                            </div>
+                            <div class="channel-item" onclick="app.navigate('welcome')">
+                                <span class="hash">#</span> sprite-maker
+                            </div>
+                        </div>
+                        <div class="hub-main">
+                            <div class="welcome-banner glass-card">
+                                <h1>Welcome back, <span>Creator</span></h1>
+                                <p>Your studio-grade asset pipeline is ready.</p>
+                            </div>
+                            <div class="hub-stats-grid">
+                                <div class="stat-card" onclick="app.navigate('welcome')">
+                                    <div class="stat-icon">✨</div>
+                                    <h3>New Project</h3>
+                                    <p>Start a new Sprite Maker session</p>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">📁</div>
+                                    <h3>Recent Exports</h3>
+                                    <p>Browse your finished assets</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 1: Welcome / Ingest -->
+                <section id="welcome-screen">
+                    <div class="glass-card main-hero">
+                        <h1>Sprite<span>Lab</span></h1>
+                        <p class="subtitle">Transform video clips into professional game assets.</p>
+                        
+                        <div id="drop-zone" class="drop-zone">
+                            <div id="upload-prompt">
+                                <i class="drop-icon">📁</i>
+                                <p>Drag & Drop Video or Click to Browse</p>
+                                <div class="button-group">
+                                    <button class="btn-primary" id="btn-select-video">Select Video</button>
+                                </div>
+                            </div>
+                            
+                            <div id="video-preview-container" class="hidden">
+                                <video id="upload-preview" muted loop></video>
+                                <div class="preview-overlay">
+                                    <button class="btn-secondary" onclick="app.resetUpload(event)">Reupload</button>
+                                </div>
+                            </div>
+                            
+                            <input type="file" id="video-input" accept="video/*" hidden>
+                        </div>
+
+                        <div id="processing-complete" class="hidden">
+                            <div class="status-badge success">Video Loaded Successfully!</div>
+                            <div class="button-group">
+                                <button class="btn-primary btn-large" onclick="app.startUpload()">Begin Extraction</button>
+                                <button class="btn-secondary" onclick="app.resetUpload(event)">Change Video</button>
+                            </div>
+                        </div>
+
+                        <div id="upload-progress" class="hidden">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" id="upload-fill"></div>
+                            </div>
+                            <p id="upload-status">Extracting keyframes...</p>
+                        </div>
+
+                        <div class="config-row">
+                            <label>Target Frames:</label>
+                            <input type="range" id="frame-count" min="4" max="24" value="12">
+                            <span id="frame-count-val">12</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Selection & Loop -->
+                <section id="selection-screen">
+                    <div class="vertical-layout">
+                        <div class="top-preview glass-card">
+                            <div class="loop-container">
+                                <img id="loop-preview" src="" alt="Loop Preview">
+                            </div>
+                        </div>
+                        
+                        <div class="bottom-controls glass-card">
+                            <div class="reel-header">
+                                <div>
+                                    <h2>Refine Animation</h2>
+                                    <p>Toggle frames to optimize the loop playback.</p>
+                                </div>
+                                <div class="action-row">
+                                    <button class="btn-secondary" onclick="app.navigate('welcome')">Back</button>
+                                    <button class="btn-primary" id="proceed-btn">Proceed to Cleanup</button>
+                                </div>
+                            </div>
+                            <div id="frame-reel" class="frame-reel"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Matte Editor -->
+                <section id="editor-screen">
+                    <div class="editor-layout">
+                        <div class="canvas-panel glass-card">
+                            <div class="canvas-wrapper">
+                                <canvas id="editor-canvas"></canvas>
+                                <div class="canvas-overlay"></div>
+                            </div>
+                        </div>
+
+                        <div class="tools-panel glass-card">
+                            <div class="tools-header">
+                                <h3>Matte Cleanup</h3>
+                                <button class="btn-secondary btn-small" onclick="app.navigate('selection')">Back</button>
+                            </div>
+                            
+                            <div class="tool-group">
+                                <button class="tool-btn active" id="tool-eraser">Eraser</button>
+                                <button class="tool-btn" id="tool-brush">Brush</button>
+                            </div>
+
+                            <div class="slider-group">
+                                <label>Brush Size: <span id="brush-size-val">20</span></label>
+                                <input type="range" id="brush-size" min="1" max="100" value="20">
+                            </div>
+
+                            <div class="slider-group">
+                                <label>Threshold: <span id="threshold-val">25</span></label>
+                                <input type="range" id="threshold-slider" min="1" max="100" value="25" onchange="canvasEditor.reprocessBackground()">
+                            </div>
+
+                            <div class="tool-group zoom-tools">
+                                <button class="btn-secondary" onclick="canvasEditor.zoomCanvas(0.1)">+</button>
+                                <button class="btn-secondary" onclick="canvasEditor.zoomCanvas(-0.1)">-</button>
+                                <button class="btn-secondary" onclick="canvasEditor.resetZoom()">Reset</button>
+                                <span id="zoom-level">100%</span>
+                            </div>
+
+                            <div class="history-group">
+                                <button onclick="canvasEditor.undo()">Undo</button>
+                                <button onclick="canvasEditor.redo()">Redo</button>
+                            </div>
+
+                            <div id="editor-reel" class="frame-reel mini"></div>
+
+                            <div class="action-row">
+                                <button class="btn-primary" id="export-btn">Generate Spritesheet</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 4: Export -->
+                <section id="export-screen">
+                    <div class="glass-card export-card">
+                        <h2>Asset Ready</h2>
+                        <div class="sheet-preview">
+                            <img id="final-sheet" src="" alt="Spritesheet">
+                        </div>
+                        <div class="action-row">
+                            <a id="download-link" href="#" download="spritesheet.png" class="btn-primary">Download PNG</a>
+                            <button class="btn-secondary" onclick="location.reload()">New Project</button>
+                        </div>
+                    </div>
+                </section>
+            </div> <!-- End #app -->
+        </main> <!-- End #main-view -->
+    </div> <!-- End #app-container -->
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

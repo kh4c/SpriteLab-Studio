@@ -1,0 +1,5 @@
+flet
+opencv-python
+pillow
+numpy
+tqdm
