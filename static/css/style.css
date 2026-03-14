@@ -604,6 +604,13 @@ h1 span {
     opacity: 0.4;
 }
 
+.frame-item.active-frame {
+    border-color: var(--accent-primary, #6366f1) !important;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+    transform: translateY(-5px) scale(1.05);
+    z-index: 10;
+}
+
 .frame-item, .frame-reel canvas, .canvas-wrapper canvas, .mini-loop-container img, #loop-preview, #final-sheet {
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-optimize-contrast;

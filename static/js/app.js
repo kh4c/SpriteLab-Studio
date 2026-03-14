@@ -56,9 +56,17 @@ const app = {
             this.setTool('brush');
         };
         document.getElementById('brush-size').oninput = (e) => this.updateBrushSize(e.target.value);
+        
+        // Navigation buttons
+        const prevBtn = document.querySelector('[onclick="app.prevFrame()"]');
+        const nextBtn = document.querySelector('[onclick="app.nextFrame()"]');
+        if (prevBtn) prevBtn.onclick = () => this.prevFrame();
+        if (nextBtn) nextBtn.onclick = () => this.nextFrame();
 
-        // Global shortcuts for undo/redo
+        // Global shortcuts for undo/redo and navigation
         window.addEventListener('keydown', (e) => {
+            const screen = document.querySelector('section.active')?.id;
+            
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'z') {
                     e.preventDefault();
@@ -66,6 +74,14 @@ const app = {
                 } else if (e.key === 'y') {
                     e.preventDefault();
                     canvasEditor.redo();
+                }
+            } else if (screen === 'drawing-screen' || screen === 'editor-screen') {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.prevFrame();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.nextFrame();
                 }
             }
         });
@@ -300,25 +316,12 @@ const app = {
         if (!active.length) return alert("Select at least one frame!");
         
         this.navigate('editor');
-        // Initial placeholder message or spinner could go here
         
-        // Batch process BG removal
-        for (let i = 0; i < active.length; i++) {
-            const resp = await fetch('/api/remove-bg', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    path: active[i].path,
-                    threshold: state.defaultThreshold
-                })
-            });
-            const data = await resp.json();
-            active[i].clean_path = data.clean_path;
-            active[i].base64 = data.base64;
-            
-            if (i === 0) canvasEditor.init(active[0]);
-            this.renderEditorReel(); // Update reel as we go
-        }
+        // Initialize editor with first frame
+        canvasEditor.init(active[0]);
+        
+        // Apply target resolution and default threshold to all immediately
+        await canvasEditor.applyThresholdToAll();
     },
 
     startDrawing() {
@@ -337,14 +340,21 @@ const app = {
     renderDrawingReel() {
         const active = state.frames.filter(f => f.active);
         const reel = document.getElementById('drawing-reel');
+        if (!reel) return;
         reel.innerHTML = '';
         active.forEach((f, i) => {
             const item = document.createElement('div');
-            item.className = 'frame-item';
-            let path = (f.clean_path || f.path).replace(/\\/g, '/');
-            const relPath = path.includes('output/') ? path.split('output/').pop() : path;
-            const t = new Date().getTime();
-            item.style.backgroundImage = `url(/output/${relPath}?t=${t})`;
+            item.className = `frame-item ${canvasEditor.currentFrame === f ? 'active-frame' : ''}`;
+            
+            if (f.base64) {
+                item.style.backgroundImage = `url(data:image/png;base64,${f.base64})`;
+            } else {
+                let path = (f.clean_path || f.path).replace(/\\/g, '/');
+                const relPath = path.includes('output/') ? path.split('output/').pop() : path;
+                const t = new Date().getTime();
+                item.style.backgroundImage = `url(/output/${relPath}?t=${t})`;
+            }
+            
             item.onclick = () => canvasEditor.loadFrame(i);
             reel.appendChild(item);
         });
@@ -353,19 +363,42 @@ const app = {
     renderEditorReel() {
         const active = state.frames.filter(f => f.active);
         const reel = document.getElementById('editor-reel');
+        if (!reel) return;
         reel.innerHTML = '';
         active.forEach((f, i) => {
             const item = document.createElement('div');
-            item.className = 'frame-item';
+            item.className = `frame-item ${canvasEditor.currentFrame === f ? 'active-frame' : ''}`;
             
-            let path = (f.clean_path || f.path).replace(/\\/g, '/');
-            const relPath = path.includes('output/') ? path.split('output/').pop() : path;
-
-            const t = new Date().getTime();
-            item.style.backgroundImage = `url(/output/${relPath}?t=${t})`;
+            if (f.base64) {
+                item.style.backgroundImage = `url(data:image/png;base64,${f.base64})`;
+            } else {
+                let path = (f.clean_path || f.path).replace(/\\/g, '/');
+                const relPath = path.includes('output/') ? path.split('output/').pop() : path;
+                const t = new Date().getTime();
+                item.style.backgroundImage = `url(/output/${relPath}?t=${t})`;
+            }
+            
             item.onclick = () => canvasEditor.loadFrame(i);
             reel.appendChild(item);
         });
+    },
+
+    prevFrame() {
+        const active = state.frames.filter(f => f.active);
+        if (!active.length) return;
+        let idx = active.indexOf(canvasEditor.currentFrame);
+        if (idx === -1) idx = 0;
+        const nextIdx = (idx - 1 + active.length) % active.length;
+        canvasEditor.loadFrame(nextIdx);
+    },
+
+    nextFrame() {
+        const active = state.frames.filter(f => f.active);
+        if (!active.length) return;
+        let idx = active.indexOf(canvasEditor.currentFrame);
+        if (idx === -1) idx = 0;
+        const nextIdx = (idx + 1) % active.length;
+        canvasEditor.loadFrame(nextIdx);
     },
 
     setTool(tool) {
@@ -507,7 +540,7 @@ const canvasEditor = {
 
     loadFrame(idx, resetDrawing = true) {
         const active = state.frames.filter(f => f.active);
-        if (idx < 0 || idx >= active.length) {
+        if (!active.length || idx < 0 || idx >= active.length) {
             console.warn("Invalid frame index requested:", idx);
             return;
         }
@@ -568,6 +601,10 @@ const canvasEditor = {
             }
         };
         img.src = 'data:image/png;base64,' + this.currentFrame.base64;
+        
+        // UI feedback for active frame in reel
+        app.renderDrawingReel();
+        app.renderEditorReel();
     },
 
     startDraw(e) {
@@ -584,6 +621,15 @@ const canvasEditor = {
         if (state.activeTool === 'bucket') {
             this.floodFill(pos.x, pos.y, state.brushColor);
             this.saveHistory();
+            
+            // Bucket Persistence Fix: Sync to frame immediately
+            if (this.currentFrame) {
+                const dataUrl = this.canvas.toDataURL();
+                this.currentFrame.base64 = dataUrl.split(',')[1];
+                // Refresh both reels to be safe
+                app.renderDrawingReel();
+                app.renderEditorReel();
+            }
             return;
         }
 
@@ -602,7 +648,6 @@ const canvasEditor = {
     },
 
     draw(e) {
-        if (!this.canvas) return;
         const pos = this.getPixelPos(e);
         this.updateBrushCursor(e, pos);
 
@@ -742,6 +787,10 @@ const canvasEditor = {
             if (this.currentFrame) {
                 const dataUrl = this.canvas.toDataURL();
                 this.currentFrame.base64 = dataUrl.split(',')[1];
+                // Refresh reels instantly
+                const screen = document.querySelector('section.active')?.id;
+                if (screen === 'drawing-screen') app.renderDrawingReel();
+                if (screen === 'editor-screen') app.renderEditorReel();
             }
         }
         this.isDrawing = false;
