@@ -604,6 +604,11 @@ h1 span {
     opacity: 0.4;
 }
 
+.frame-item, .frame-reel canvas, .canvas-wrapper canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
 /* Tool Layout & Icons */
 .tool-grid {
     display: flex;
@@ -836,6 +841,8 @@ input[type="range"]:active::-webkit-slider-thumb {
     max-height: 100%;
     object-fit: contain;
     border-radius: 10px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 /* Canvas Editor */
@@ -892,6 +899,8 @@ input[type="range"]:active::-webkit-slider-thumb {
     width: 100%;
     height: 100%;
     object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 .resize-handle {

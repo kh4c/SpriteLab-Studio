@@ -50,6 +50,7 @@ const app = {
         document.getElementById('tool-eraser').onclick = () => this.setTool('eraser');
         document.getElementById('tool-brush').onclick = () => this.setTool('brush');
         document.getElementById('tool-eyedropper').onclick = () => this.setTool('eyedropper');
+        document.getElementById('tool-bucket').onclick = () => this.setTool('bucket');
         document.getElementById('brush-color').oninput = (e) => {
             state.brushColor = e.target.value;
             this.setTool('brush');
@@ -371,8 +372,7 @@ const app = {
         state.activeTool = tool;
         document.querySelectorAll('.tool-btn-small').forEach(btn => btn.classList.remove('active'));
         
-        const btnId = tool === 'eyedropper' ? 'tool-eyedropper' : `tool-${tool}`;
-        const btn = document.getElementById(btnId);
+        const btn = document.getElementById(`tool-${tool}`);
         if (btn) btn.classList.add('active');
         
         // Visual cursor feedback
@@ -571,22 +571,24 @@ const canvasEditor = {
     },
 
     startDraw(e) {
-        this.isDrawing = true;
-        this.draw(e);
-    },
-
-    startDraw(e) {
         if (!this.currentFrame) return;
-        this.isDrawing = true;
         
         const pos = this.getPixelPos(e);
         this.lastPixel = pos;
         
         if (state.activeTool === 'eyedropper') {
             this.pickColor(e);
-        } else {
-            this.paintPixel(pos.x, pos.y);
+            return;
         }
+
+        if (state.activeTool === 'bucket') {
+            this.floodFill(pos.x, pos.y, state.brushColor);
+            this.saveHistory();
+            return;
+        }
+
+        this.isDrawing = true;
+        this.paintPixel(pos.x, pos.y);
     },
 
     getPixelPos(e) {
@@ -638,8 +640,6 @@ const canvasEditor = {
         this.ctx.globalCompositeOperation = state.activeTool === 'eraser' ? 'destination-out' : 'source-over';
         this.ctx.fillStyle = state.brushColor;
         
-        // Brush size as pixel block
-        // Brush size logic: 1-10 = 1px, 11-20 = 2px, etc.
         const size = Math.floor((state.brushSize - 0.1) / 10) + 1;
         if (size === 1) {
             this.ctx.fillRect(x, y, 1, 1);
@@ -647,6 +647,45 @@ const canvasEditor = {
             const offset = Math.floor(size / 2);
             this.ctx.fillRect(x - offset, y - offset, size, size);
         }
+    },
+
+    floodFill(startX, startY, fillColor) {
+        const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        const pixels = imageData.data;
+        
+        const startIdx = (startY * this.canvas.width + startX) * 4;
+        const startR = pixels[startIdx];
+        const startG = pixels[startIdx + 1];
+        const startB = pixels[startIdx + 2];
+        const startA = pixels[startIdx + 3];
+
+        // Parse fill color
+        let r, g, b, a = 255;
+        if (fillColor.startsWith('#')) {
+            const hex = fillColor.slice(1);
+            r = parseInt(hex.slice(0, 2), 16);
+            g = parseInt(hex.slice(2, 4), 16);
+            b = parseInt(hex.slice(4, 6), 16);
+        }
+
+        if (r === startR && g === startG && b === startB && a === startA) return;
+
+        const stack = [[startX, startY]];
+        while (stack.length > 0) {
+            const [x, y] = stack.pop();
+            const idx = (y * this.canvas.width + x) * 4;
+
+            if (x < 0 || x >= this.canvas.width || y < 0 || y >= this.canvas.height) continue;
+            if (pixels[idx] !== startR || pixels[idx+1] !== startG || pixels[idx+2] !== startB || pixels[idx+3] !== startA) continue;
+
+            pixels[idx] = r;
+            pixels[idx+1] = g;
+            pixels[idx+2] = b;
+            pixels[idx+3] = a;
+
+            stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+        this.ctx.putImageData(imageData, 0, 0);
     },
 
     updateBrushCursor(e, pixelPos) {
