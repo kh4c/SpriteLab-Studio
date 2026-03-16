@@ -16,6 +16,8 @@
     --shadow: 0 4px 8px rgba(0,0,0,0.2);
     --accent-color: #5865F2;
     --accent-glow: rgba(88, 101, 242, 0.3);
+    --success-color: #23a55a;
+    --danger-color: #f23f43;
 }
 
 [data-theme="light"] {
@@ -522,6 +524,84 @@ h1 span {
     background: rgba(255,255,255,0.05);
 }
 
+/* Layout Utilities */
+.h-stack {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+.v-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+.btn-success {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+    color: white !important;
+}
+
+.panel-scroll-view {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+.panel-scroll-view::-webkit-scrollbar {
+    width: 4px;
+}
+.panel-scroll-view::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+/* Toggle Switch */
+.switch-small {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+}
+.switch-small input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider-round {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-secondary);
+    transition: .3s;
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+}
+.slider-round:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--text-heading);
+    transition: .3s;
+    border-radius: 50%;
+}
+input:checked + .slider-round {
+    background-color: var(--brand-color);
+    border-color: var(--brand-color);
+}
+input:checked + .slider-round:before {
+    transform: translateX(14px);
+    background-color: white;
+}
+
 /* Editor Layout */
 .editor-layout {
     display: grid;
@@ -611,11 +691,42 @@ h1 span {
     z-index: 10;
 }
 
-.frame-item, .frame-reel canvas, .canvas-wrapper canvas, .mini-loop-container img, #loop-preview, #final-sheet {
+.canvas-wrapper canvas {
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    position: relative;
+    z-index: 1;
+}
+
+.canvas-wrapper canvas[id^="cursor-canvas"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.frame-item, .frame-reel canvas, .mini-loop-container img, #loop-preview, #final-sheet {
+    image-rendering: pixelated;
+}
+
+/* Checkerboard background for canvases to show transparency */
+.canvas-wrapper, .frame-item, #loop-preview, .mini-loop-container {
+    background-image: 
+        linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
+        linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
+        linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #1e1e1e;
+}
+
+/* Handle Cursors - though mostly handled by JS, these ensure context */
+#cursor-canvas, #cursor-canvas-editor {
+    cursor: crosshair;
 }
 
 /* Tool Layout & Icons */
@@ -943,4 +1054,39 @@ canvas {
 .mini .frame-item {
     min-width: 80px;
     height: 80px;
+}
+
+/* Excluded Frame Styles */
+.frame-item.excluded {
+    opacity: 0.4;
+    filter: grayscale(1) contrast(0.8);
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.frame-item.active-frame.excluded {
+    border-color: var(--brand-experiment) !important;
+    box-shadow: 0 0 10px rgba(88, 101, 242, 0.3) !important;
+}
+
+/* Color Adjustments Panel */
+.color-adjustments-panel {
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    margin-top: 16px;
+}
+
+.color-adjustments-panel .slider-group {
+    margin-bottom: 12px;
+}
+
+.color-adjustments-panel label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-normal);
+}
+
+.color-adjustments-panel input[type="range"] {
+    width: 100%;
 }

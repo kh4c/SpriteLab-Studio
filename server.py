@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 from processing.video import extract_keyframes, get_video_meta
 from processing.matte import remove_background
-from processing.sprite import pack_spritesheet
+from processing.sprite import pack_spritesheet, slice_spritesheet
 from PIL import Image
 import base64
 import io
@@ -43,6 +43,88 @@ def upload_video():
     
     frames = extract_keyframes(video_path, out_dir, count=target_count)
     return jsonify({"frames": frames, "video_name": video_path.stem})
+
+@app.route("/api/upload-image", methods=["POST"])
+def upload_image():
+    if "image" not in request.files:
+        return jsonify({"error": "No image file"}), 400
+    
+    img_file = request.files["image"]
+    img_path = UPLOAD_FOLDER / img_file.filename
+    img_file.save(img_path)
+    
+    out_dir = UPLOAD_FOLDER / img_path.stem
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(exist_ok=True)
+    
+    try:
+        with Image.open(img_path) as img:
+            frame_path = out_dir / "frame-001.png"
+            img.save(frame_path)
+            
+            frames = [{
+                "index": 1,
+                "path": str(frame_path),
+                "url": f"/output/{img_path.stem}/frame-001.png"
+            }]
+            return jsonify({"frames": frames, "video_name": img_path.stem})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/api/slice", methods=["POST"])
+def slice_endpoint():
+    data = request.json
+    img_path = data.get("path")
+    if not img_path:
+        return jsonify({"error": "No image path"}), 400
+        
+    mode = data.get("mode", "grid")
+    cols = data.get("cols", 1)
+    rows = data.get("rows", 1)
+    width = data.get("width")
+    height = data.get("height")
+    
+    p = Path(img_path)
+    out_dir = UPLOAD_FOLDER / p.stem
+    
+    try:
+        frames = slice_spritesheet(
+            img_path, 
+            out_dir, 
+            mode=mode, 
+            cols=cols, 
+            rows=rows, 
+            width=width, 
+            height=height
+        )
+        return jsonify({"frames": frames, "video_name": p.stem})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route("/api/demo-sprite", methods=["POST"])
+def demo_sprite():
+    # Pre-loaded test sheet
+    img_path = Path("spritesheet.png")
+    if not img_path.exists():
+        return jsonify({"error": "Demo spritesheet not found"}), 404
+        
+    out_dir = UPLOAD_FOLDER / img_path.stem
+    if out_dir.exists():
+        import shutil
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(exist_ok=True)
+    
+    # Just copy it to output for consistent URI access
+    target_path = out_dir / img_path.name
+    import shutil
+    shutil.copy(img_path, target_path)
+    
+    return jsonify({
+        "path": str(target_path.absolute()),
+        "url": f"/output/{img_path.stem}/{img_path.name}",
+        "name": img_path.stem
+    })
 
 @app.route("/api/demo", methods=["POST"])
 def demo_mode():
@@ -105,14 +187,23 @@ def export_sheet():
     data = request.json
     frame_paths = data.get("paths")
     video_name = data.get("video_name")
+    cols = int(data.get("cols", 4))
+    rows = data.get("rows")
+    if rows is not None:
+        rows = int(rows)
+        if rows <= 0: rows = None # 0 means auto
+    
+    sheet_name = data.get("sheetName") or "spritesheet"
+    if not sheet_name.endswith(".png"):
+        sheet_name += ".png"
     
     if not frame_paths:
         return jsonify({"error": "No frames"}), 400
     
-    out_path = UPLOAD_FOLDER / video_name / "spritesheet.png"
-    pack_spritesheet(frame_paths, out_path)
+    out_path = UPLOAD_FOLDER / video_name / sheet_name
+    pack_spritesheet(frame_paths, out_path, cols=cols, rows=rows)
     
-    return jsonify({"sheet_url": f"/output/{video_name}/spritesheet.png"})
+    return jsonify({"sheet_url": f"/output/{video_name}/{sheet_name}"})
 
 @app.route("/output/<path:filename>")
 def serve_output(filename):
