@@ -11,6 +11,9 @@ def pack_spritesheet(frame_paths, out_path, cols=4, rows=None, padding=0):
     max_h = max(f.height for f in frames)
     
     count = len(frames)
+    if count < cols:
+        cols = count
+        
     if rows is None:
         rows = math.ceil(count / cols)
     

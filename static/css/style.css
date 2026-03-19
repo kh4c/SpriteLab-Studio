@@ -477,8 +477,9 @@ h1 span {
     margin-bottom: 24px;
 }
 
-.drop-zone:hover {
+.drop-zone:hover, .drop-zone.drag-active {
     border-color: var(--blurple);
+    background: rgba(88, 101, 242, 0.05);
 }
 
 .drop-icon {
