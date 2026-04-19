@@ -13,10 +13,10 @@
 If you want to see the performance without leaving GitHub, check out these small clips:
 
 **AI Animation Result:**
-https://github.com/kh4c/SpriteLab-Studio/raw/master/Image/results/animation_result.mp4
+![](./Image/results/animation_result.mp4)
 
-**Sprite Perfection:**
-https://github.com/kh4c/SpriteLab-Studio/raw/master/Image/results/sprite_result.mp4
+**Pixel-Perfect Sprite Perfection:**
+![](./Image/results/sprite_result.mp4)
 
 ---
 
