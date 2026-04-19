@@ -88,7 +88,7 @@ Bridge the gap between static frames using AI.
 | **Frontend** | Vanilla JS, CSS (Premium Dark Theme) |
 | **Img Processing** | OpenCV, Pillow, NumPy |
 | **Audio AI** | Facebook AudioGen (AudioCraft) |
-| **Animation AI** | ComfyUI Bridge (Wan2.1 / SVD) |
+| **Animation AI** | ComfyUI Bridge (Wan2.2 / SVD) |
 | **Color Space** | Perceptual CIELAB for bg-removal |
 
 ---
