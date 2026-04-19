@@ -1,4 +1,4 @@
-# 🚀 SpriteLab - AI-Powered Game Asset Suite
+# SpriteLab - AI-Powered Game Asset Suite
 
 ![SpriteLab Banner](INSERT_BANNER_IMAGE_HERE)
 
@@ -6,7 +6,7 @@
 
 ---
 
-## 📺 Demo
+## Demo
 ![Project Demo Video](INSERT_DEMO_VIDEO_HERE)
 
 > [!TIP]
@@ -14,38 +14,38 @@
 
 ---
 
-## ✨ Core Modules
+## Core Modules
 
-### 🛠️ Sprite Maker
+### Sprite Maker
 Transform any video clip into a game-ready spritesheet.
 - **Auto-Extraction**: Intelligent keyframe selection from `mp4`, `avi`, or `mov`.
 - **Background Removal**: Uses perceptual **CIELAB** distance logic to isolate characters with high precision.
 - **Sheet Packing**: Automatically packs isolated frames into a single, optimized spritesheet.
 
-### 🎨 Image Editor
+### Image Editor
 A specialized workspace for single-image refinement.
 - **Cleanup Tools**: High-precision brush, eraser, and eyedropper.
 - **Palette Quantization**: Instantly convert images to iconic styles like **PICO-8**, **GameBoy**, or **NES**.
 - **Flood-Fill Isolation**: Isolate complex backgrounds using connected-component analysis.
 
-### ✂️ Sprite Editor
+### Sprite Editor
 Import and modify existing spritesheets.
 - **Smart Slicing**: Slice sheets by grid or fixed cell size.
 - **Batch Editing**: Apply transparency or palette filters to all frames simultaneously.
 
-### 🔊 Sound Lab
+### Sound Lab
 AI-driven SFX creation powered by **AudioGen**.
 - **Text-to-SFX**: Generate sounds like "Laser blast", "Sword clang", or "Ambient rain" from simple prompts.
 - **Post-Processing**: Fine-tune volume, pitch (resampling), and trim start/end points.
 
-### 🎬 Animation Lab
+### Animation Lab
 Bridge the gap between static frames using AI.
 - **Keyframe Interpolation**: Uses the **ComfyUI Bridge** to generate smooth transitions between two images.
 - **Prompt Guided**: Use positive and negative prompts to influence the motion and style of the animation.
 
 ---
 
-## 🛠️ Installation
+## Installation
 
 ### Prerequisites
 - **Python**: 3.12 or higher.
@@ -69,7 +69,7 @@ Bridge the gap between static frames using AI.
 
 ---
 
-## 🚀 Usage
+## Usage
 
 1. **Start the server**:
    ```bash
@@ -80,7 +80,7 @@ Bridge the gap between static frames using AI.
 
 ---
 
-## 🏗️ Technical Details
+## Technical Details
 
 | Feature | Tech Used |
 | :--- | :--- |
@@ -93,7 +93,7 @@ Bridge the gap between static frames using AI.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 Feel free to open issues or submit pull requests. Let's make game asset creation accessible to everyone!
 
 ---
