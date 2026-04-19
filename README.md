@@ -2,7 +2,7 @@
 
 ![SpriteLab Banner](INSERT_BANNER_IMAGE_HERE)
 
-**SpriteLab** is a premium, all-in-one suite designed for indie developers and sprite artists to transform media into high-quality game assets. From video-to-sprite extraction to AI-generated sound effects, SpriteLab streamlines the technical hurdles of asset creation.
+**SpriteLab** is a personal project designed to help small and indie game developers speed up their asset creation workflow. It focuses on extracting, refining, and polishing AI-generated game assets—from video-to-sprite transitions to text-to-SFX generation—streamlining the technical hurdles of the creative process.
 
 ---
 
@@ -10,7 +10,7 @@
 ![Project Demo Video](INSERT_DEMO_VIDEO_HERE)
 
 > [!TIP]
-> Use the **premium dark mode** for the best eyes-on experience during long editing sessions!
+> Use the **dark mode** for the best eyes-on experience during long editing sessions!
 
 ---
 
@@ -85,7 +85,7 @@ Bridge the gap between static frames using AI.
 | Feature | Tech Used |
 | :--- | :--- |
 | **Backend** | Flask (Python) |
-| **Frontend** | Vanilla JS, CSS (Premium Dark Theme) |
+| **Frontend** | Vanilla JS, CSS (Dark Theme) |
 | **Img Processing** | OpenCV, Pillow, NumPy |
 | **Audio AI** | Facebook AudioGen (AudioCraft) |
 | **Animation AI** | ComfyUI Bridge (Wan2.2 / SVD) |
