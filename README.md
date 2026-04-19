@@ -1,30 +1,44 @@
-# SpriteLab Studio - AI- Game Asset refining Suite
+# SpriteLab Studio - Pixel Art Asset Pipeline
 
-![SpriteLab Studio Banner](Image/MainPage.png)
+[![SpriteLab Studio Banner](Image/MainPage.png)](https://www.youtube.com/watch?v=6WWTcY8P2rg)
 
-**SpriteLab Studio** is a personal project designed to help small and indie game developers speed up their asset creation workflow. It focuses on extracting, refining, and polishing AI-generated game assets—from video-to-sprite transitions to text-to-SFX generation—streamlining the technical hurdles of the creative process.
-
----
-
-## Demo
-[![SpriteLab Studio Demo Video](Image/MainPage.png)](Image/demo/demo.mp4)
-*Click the image above to watch the full demo video.*
+**SpriteLab Studio** is a personal pixel-art pipeline designed to help indie developers transform video and AI-generated content into optimized game assets. It focuses on maintaining pixel-perfect fidelity, precise alignment, and authentic retro aesthetics.
 
 ---
 
+## 📽️ Demo Video
+[![Watch the Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=6WWTcY8P2rg)
+
 ---
 
-## Key Strengths
+---
 
-- **AI Artifact Cleaning**: Specialized tools to remove noise, hallucination artifacts, and "AI blur" from generated assets.
-  
-  | Raw AI Output (Problem) | SpriteLab Refined (Solution) |
-  | :---: | :---: |
-  | ![AI Problem](Image/ai%20problem.png) | <img src="Image/pixel%20perfect.png" width="300" alt="Pixel Perfect"> |
-  | *Visible noise and blurred edges* | *Clean, pixel-perfect alignment* |
 
-- **Pixel-Perfect Alignment**: Ensures every frame is mathematically centered and aligned for smooth in-game motion without jitter.
-- **Optimized Spritesheet Exporting**: Smart packing algorithms that minimize empty space and provide one-click export for game engines.
+## ✨ Key Strengths
+
+- **Pixel-Art Focused**: Every tool is calibrated for low-resolution, high-fidelity asset creation.
+- **AI Artifact Cleaning**: Specialized filters to remove noise and hallucinations from AI-generated outputs.
+- **Mathematical Alignment**: Eliminates "pixel jitter" in animations through precision frame centering.
+
+---
+
+## 🔬 The Pixel-Perfect Engine
+
+SpriteLab Studio uses a specialized processing stack to ensure your assets remain game-ready:
+
+- **Perceptual CIELAB Matte**: Our background removal uses the **CIELAB color space**, which measures "perceptual distance" rather than simple RGB values. This ensures that even subtle pixel art outlines are preserved perfectly during isolation.
+- **NEAREST-Neighbor Fidelity**: All scaling operations use **NEAREST** interpolation. This guarantees that your pixel edges stay sharp and never become blurred by traditional biliner/bicubic filters.
+- **Alpha-Composite Centering**: Frames are mathematically centered within their cells using integer-based offsets and alpha-composition, ensuring uniform dimensions for easier integration into game engines like Godot, Unity, or GameMaker.
+- **Authentic Palette Quantization**: Match your AI outputs to iconic retro palettes instantly, supporting **PICO-8**, **GameBoy**, and **NES** limitations.
+
+---
+
+| Raw AI Output (Problem) | SpriteLab Refined (Solution) |
+| :---: | :---: |
+| ![AI Problem](Image/ai%20problem.png) | <img src="Image/pixel%20perfect.png" width="300" alt="Pixel Perfect"> |
+| *Visible noise and blurred edges* | *Clean, pixel-perfect alignment* |
+
+---
 
 ---
 
