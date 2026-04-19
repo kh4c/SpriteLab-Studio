@@ -66,8 +66,8 @@ def main(page: ft.Page):
                 navigate_to("selection")
 
         welcome_content = ft.Column([
-            ft.Text("SpriteLab", size=64, weight=ft.FontWeight.BOLD, color=ft.Colors.CYAN_400),
-            ft.Text("Studio-grade 2D asset creation for everyone.", size=18, color=ft.Colors.GREY_400),
+            ft.Text("SpriteLab Studio", size=64, weight=ft.FontWeight.BOLD, color=ft.Colors.CYAN_400),
+            ft.Text("Personal 2D asset creation for indie developers.", size=18, color=ft.Colors.GREY_400),
             ft.Container(height=60),
             ft.Container(
                 content=ft.Column([

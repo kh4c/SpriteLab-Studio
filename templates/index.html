@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpriteLab - Studio Grade 2D Asset Tool</title>
+    <title>SpriteLab Studio - 2D Asset Tool for Indie Devs</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Social Preview / Cover Page Meta Tags -->
+    <meta property="og:title" content="SpriteLab Studio - AI-Powered Game Asset Suite">
+    <meta property="og:description" content="A personal tool for indie devs to transform video clips into professional game assets with AI precision.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/kh4c/SpriteLab-Studio/main/Image/MainPage.png">
+    <meta property="og:url" content="https://github.com/kh4c/SpriteLab-Studio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/kh4c/SpriteLab-Studio/main/Image/MainPage.png">
 </head>
 <body class="dark-theme">
     <div id="app-container">
@@ -39,7 +47,7 @@
                 <div class="user-avatar">SL</div>
                 <div class="user-info">
                     <div class="user-name">Guest Artist</div>
-                    <div class="user-status">Studio Tier</div>
+                    <div class="user-status">Indie Artist</div>
                 </div>
                 <div class="user-settings-icon" onclick="app.navigate('settings')">⚙️</div>
             </div>
@@ -81,13 +89,13 @@
                         <div class="hub-main">
                             <div class="welcome-banner glass-card">
                                 <h1>Welcome back, <span>Creator</span></h1>
-                                <p>Your studio-grade asset pipeline is ready.</p>
+                                <p>Your personal asset pipeline is ready.</p>
                             </div>
                             <div class="hub-stats-grid">
                                 <div class="stat-card" onclick="app.navigate('welcome', 'sprite')">
                                     <div class="stat-icon">✨</div>
                                     <h3>Sprite Maker</h3>
-                                    <p>Start a new Sprite Maker session</p>
+                                    <p>Start a new Sprite Maker session (Requires Video Input)</p>
                                 </div>
                                 <div class="stat-card" onclick="app.navigate('welcome', 'image')">
                                     <div class="stat-icon">🖼️</div>
@@ -104,14 +112,6 @@
                                     <h3>Animation Lab</h3>
                                     <p>AI Video generation between frames</p>
                                 </div>
-                                    <h3>Demo Mode</h3>
-                                    <p>Load test2.mp4 instantly</p>
-                                </div>
-                                <div class="stat-card" onclick="app.startDemoSprite()">
-                                    <div class="stat-icon">🎨</div>
-                                    <h3>Demo Sprite</h3>
-                                    <p>Load spritesheet.png instantly</p>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -121,7 +121,7 @@
                 <section id="welcome-screen">
                     <div class="glass-card main-hero">
                         <h1 id="hero-title">Sprite<span>Lab</span></h1>
-                        <p id="hero-subtitle" class="subtitle">Transform video clips into professional game assets.</p>
+                        <p id="hero-subtitle" class="subtitle">A personal tool for indie devs to transform video clips (MP4/MOV) into game assets.</p>
                         
                         <div id="drop-zone" class="drop-zone">
                             <div id="upload-prompt">

@@ -121,44 +121,7 @@ def slice_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-@app.route("/api/demo-sprite", methods=["POST"])
-def demo_sprite():
-    # Pre-loaded test sheet
-    img_path = Path("spritesheet.png")
-    if not img_path.exists():
-        return jsonify({"error": "Demo spritesheet not found"}), 404
-        
-    out_dir = UPLOAD_FOLDER / img_path.stem
-    if out_dir.exists():
-        import shutil
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(exist_ok=True)
-    
-    # Just copy it to output for consistent URI access
-    target_path = out_dir / img_path.name
-    import shutil
-    shutil.copy(img_path, target_path)
-    
-    return jsonify({
-        "path": str(target_path.absolute()),
-        "url": f"/output/{img_path.stem}/{img_path.name}",
-        "name": img_path.stem
-    })
 
-@app.route("/api/demo", methods=["POST"])
-def demo_mode():
-    # Hardcoded test path
-    video_path = Path(r"C:\Users\user\Desktop\live2d project\SpriteLab\test2.mp4")
-    if not video_path.exists():
-        return jsonify({"error": "Demo video not found"}), 404
-        
-    target_count = int(request.form.get("target_count", 12))
-    out_dir = UPLOAD_FOLDER / video_path.stem
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    
-    frames = extract_keyframes(video_path, out_dir, count=target_count)
-    return jsonify({"frames": frames, "video_name": video_path.stem})
 
 @app.route("/api/remove-bg", methods=["POST"])
 def remove_bg():

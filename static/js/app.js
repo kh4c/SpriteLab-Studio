@@ -324,7 +324,7 @@ const app = {
             const isSheet = state.currentMode === 'sheet';
             
             document.getElementById('hero-title').innerHTML = isImage ? 'Image<span>Editor</span>' : (isSheet ? 'Sprite<span>Editor</span>' : 'Sprite<span>Lab</span>');
-            document.getElementById('hero-subtitle').innerText = isImage ? 'Cleanup and edit single images with ease.' : (isSheet ? 'Slice and edit existing spritesheet files.' : 'Transform video clips into professional game assets.');
+            document.getElementById('hero-subtitle').innerText = isImage ? 'Cleanup and edit single images with ease.' : (isSheet ? 'Slice and edit existing spritesheet files.' : 'Transform MP4/MOV video clips into game assets (Requires Video Input).');
             
             const promptP = document.getElementById('upload-prompt').querySelector('p');
             if (isImage) promptP.innerText = 'Drag & Drop Image or Click to Browse';
@@ -729,58 +729,7 @@ const app = {
         }
     },
 
-    async startDemo() {
-        const formData = new FormData();
-        formData.append('target_count', state.targetCount);
 
-        try {
-            const resp = await fetch('/api/demo', { method: 'POST', body: formData });
-            const data = await resp.json();
-            state.frames = data.frames.map(f => ({ ...f, active: true }));
-            state.videoName = data.video_name;
-            this.navigate('selection');
-        } catch (err) {
-            console.error("Demo failed", err);
-            alert("Demo failed.");
-        }
-    },
-
-    async startDemoSprite() {
-        try {
-            const resp = await fetch('/api/demo-sprite', { method: 'POST' });
-            const data = await resp.json();
-            
-            if (data.error) throw new Error(data.error);
-            
-            state.sheetPath = data.path;
-            state.videoName = data.name;
-            
-            // Navigate to welcome screen first, then manually trigger slicing view
-            this.navigate('welcome', 'sheet');
-            
-            // Populate the preview manually
-            const img = document.getElementById('slice-preview-img');
-            const mainImg = document.getElementById('image-upload-preview');
-            img.src = data.url;
-            mainImg.src = data.url;
-            
-            document.getElementById('upload-prompt').classList.add('hidden');
-            document.getElementById('video-preview-container').classList.remove('hidden');
-            document.getElementById('processing-complete').classList.remove('hidden');
-            document.getElementById('slicing-config').classList.remove('hidden');
-            
-            const statusEl = document.getElementById('processing-complete').querySelector('.status-badge');
-            const proceedBtn = document.getElementById('processing-complete').querySelector('.btn-primary');
-            statusEl.innerText = "Demo Spritesheet Loaded!";
-            proceedBtn.innerText = "Begin Slicing";
-            proceedBtn.onclick = () => this.navigate('slicing');
-
-            img.onload = () => this.updateSlicePreview();
-        } catch (err) {
-            console.error("Demo Sprite failed", err);
-            alert("Demo Sprite failed: " + err.message);
-        }
-    },
 
     renderReel(containerId) {
         const reel = document.getElementById(containerId);

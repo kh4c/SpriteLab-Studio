@@ -1,26 +1,35 @@
-# SpriteLab - AI-Powered Game Asset Suite
+# SpriteLab Studio - AI-Powered Game Asset Suite
 
-![SpriteLab Banner](INSERT_BANNER_IMAGE_HERE)
+![SpriteLab Studio Banner](Image/MainPage.png)
 
-**SpriteLab** is a personal project designed to help small and indie game developers speed up their asset creation workflow. It focuses on extracting, refining, and polishing AI-generated game assets—from video-to-sprite transitions to text-to-SFX generation—streamlining the technical hurdles of the creative process.
+**SpriteLab Studio** is a personal project designed to help small and indie game developers speed up their asset creation workflow. It focuses on extracting, refining, and polishing AI-generated game assets—from video-to-sprite transitions to text-to-SFX generation—streamlining the technical hurdles of the creative process.
 
 ---
 
-## Demo
-![Project Demo Video](INSERT_DEMO_VIDEO_HERE)
+## Key Strengths
 
-> [!TIP]
-> Use the **dark mode** for the best eyes-on experience during long editing sessions!
+- **AI Artifact Cleaning**: Specialized tools to remove noise, hallucination artifacts, and "AI blur" from generated assets.
+- **Pixel-Perfect Alignment**: Ensures every frame is mathematically centered and aligned for smooth in-game motion without jitter.
+- **Optimized Spritesheet Exporting**: Smart packing algorithms that minimize empty space and provide one-click export for game engines.
+
+---
 
 ---
 
 ## Core Modules
 
 ### Sprite Maker
-Transform any video clip into a game-ready spritesheet.
-- **Auto-Extraction**: Intelligent keyframe selection from `mp4`, `avi`, or `mov`.
-- **Background Removal**: Uses perceptual **CIELAB** distance logic to isolate characters with high precision.
-- **Sheet Packing**: Automatically packs isolated frames into a single, optimized spritesheet.
+Transform any video clip into a game-ready spritesheet with our multi-stage pipeline.
+
+#### Visual Workflow
+
+| Step | description | Preview |
+| :--- | :--- | :--- |
+| **1. Ingest** | Upload your `mp4` or `mov` video clips to begin the extraction process. | ![Ingest](Image/spritemaker1.png) |
+| **2. Refine** | Pick the exact frames you want to include in your animation loop. | ![Refine](Image/Screenshot%202026-04-19%20183216.png) |
+| **3. Cleanup** | Automatically remove backgrounds using high-precision CIELAB masking. | ![Cleanup](Image/Screenshot%202026-04-19%20183538.png) |
+| **4. Fine Edit** | Adjust brightness, contrast, and apply custom palette remapping. | ![Fine Edit](Image/Screenshot%202026-04-19%20183845.png) |
+| **5. Export** | Pack your refined frames mathematically into a pixel-perfect spritesheet. | ![Export](Image/spritesheet.png) |
 
 ### Image Editor
 A specialized workspace for single-image refinement.
@@ -40,8 +49,11 @@ AI-driven SFX creation powered by **AudioGen**.
 
 ### Animation Lab (In Development)
 Bridge the gap between static frames using AI.
-- **Keyframe Interpolation**: Uses the **ComfyUI Bridge** (currently in active development) to generate smooth transitions between two images.
-- **Prompt Guided**: Use positive and negative prompts to influence the motion and style of the animation.
+- **Keyframe Interpolation**: Uses the **ComfyUI Bridge** (Wan 2.2 / SVD) to generate smooth motion.
+- **Workflow Driven**: Integrated with ComfyUI for advanced control.
+
+#### Animation Pipeline (Wan 2.2)
+![Animation Lab Workflow](Image/wan2.2.png)
 
 ---
 
@@ -55,8 +67,8 @@ Bridge the gap between static frames using AI.
 ### Setup
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/kh4c/SpriteLab.git
-   cd SpriteLab
+   git clone https://github.com/kh4c/SpriteLab-Studio.git
+   cd SpriteLab-Studio
    ```
 
 2. **Install dependencies**:
