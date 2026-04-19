@@ -7,7 +7,8 @@
 ---
 
 ## Demo
-![Project Demo Video](Image/demo/demo.mp4)
+[![SpriteLab Studio Demo Video](Image/MainPage.png)](Image/demo/demo.mp4)
+*Click the image above to watch the full demo video.*
 
 ---
 
