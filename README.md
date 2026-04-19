@@ -6,8 +6,17 @@
 
 ---
 
-## 📽️ Demo Video
+## 📽️ Full Demo
 [![Watch the Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=6WWTcY8P2rg)
+
+### Quick Previews (Watch Inside README)
+If you want to see the performance without leaving GitHub, check out these small clips:
+
+**AI Animation Result:**
+https://github.com/kh4c/SpriteLab-Studio/raw/master/Image/results/animation_result.mp4
+
+**Sprite Perfection:**
+https://github.com/kh4c/SpriteLab-Studio/raw/master/Image/results/sprite_result.mp4
 
 ---
 
