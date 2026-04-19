@@ -713,6 +713,42 @@ input:checked + .slider-round:before {
     image-rendering: pixelated;
 }
 
+/* Sound Lab Styles */
+.sound-grid {
+    animation: fadeIn 0.4s ease-out;
+}
+
+.sound-card {
+    transition: transform 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.sound-card:hover {
+    border-color: var(--blurple);
+}
+
+.sound-card h3 {
+    margin-bottom: 8px;
+    color: var(--header-primary);
+}
+
+.sound-card p {
+    margin-bottom: 16px;
+}
+
+#sfx-player {
+    filter: invert(1) hue-rotate(180deg) brightness(1.5); /* Make standard player look better in dark theme */
+    height: 40px;
+}
+
+#sfx-progress {
+    background: var(--bg-tertiary);
+    padding: 24px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
 /* Checkerboard background for canvases to show transparency */
 .canvas-wrapper, .frame-item, #loop-preview, .mini-loop-container {
     background-image: 

@@ -1,6 +1,11 @@
 import os
 import shutil
 from pathlib import Path
+import sys
+
+# Increase limit for large integer to string conversions (important for some scientific libraries)
+if hasattr(sys, 'set_int_max_str_digits'):
+    sys.set_int_max_str_digits(0)
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 from processing.video import extract_keyframes, get_video_meta
@@ -9,6 +14,20 @@ from processing.sprite import pack_spritesheet, slice_spritesheet
 from PIL import Image
 import base64
 import io
+import threading
+import requests
+
+# Lazy import for AudioGen to avoid startup crash if still installing
+_audio_gen = None
+def get_audio_gen():
+    global _audio_gen
+    if _audio_gen is None:
+        from processing.audio import AudioGenerator
+        _audio_gen = AudioGenerator()
+    return _audio_gen
+
+from processing.animation import ComfyBridge
+comfy_bridge = ComfyBridge()
 
 app = Flask(__name__)
 CORS(app)
@@ -204,6 +223,124 @@ def export_sheet():
     pack_spritesheet(frame_paths, out_path, cols=cols, rows=rows)
     
     return jsonify({"sheet_url": f"/output/{video_name}/{sheet_name}"})
+
+@app.route("/api/generate-sfx", methods=["POST"])
+def generate_sfx_endpoint():
+    data = request.json
+    prompt = data.get("prompt")
+    duration = float(data.get("duration", 2))
+    video_name = data.get("video_name") or "global"
+    
+    if not prompt:
+        return jsonify({"error": "No prompt provided"}), 400
+        
+    try:
+        gen = get_audio_gen()
+        # Generate filename based on prompt hash or just timestamp
+        import time
+        ts = int(time.time())
+        filename = f"sfx_{ts}"
+        
+        output_dir = UPLOAD_FOLDER / video_name / "sfx"
+        guidance_scale = float(data.get("guidance_scale", 4.0))
+        full_path = gen.generate(prompt, duration=duration, guidance_scale=guidance_scale, output_dir=output_dir, filename=filename)
+        
+        # AudioGen/audio_write returns the path with .wav
+        rel_path = f"/output/{video_name}/sfx/{Path(full_path).name}"
+        
+        return jsonify({
+            "success": True,
+            "url": rel_path,
+            "filename": Path(full_path).name
+        })
+    except Exception as e:
+        print(f"SFX Generation Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/process-sfx', methods=['POST'])
+def process_sfx():
+    try:
+        data = request.json
+        # Convert URL path to local filesystem path
+        url_path = data.get('url')
+        if not url_path:
+            return jsonify({"error": "No URL provided"}), 400
+            
+        # Example: http://127.0.0.1:5000/output/global/sfx/sfx_123.wav -> output/global/sfx/sfx_123.wav
+        from urllib.parse import urlparse
+        parsed = urlparse(url_path)
+        rel_path = parsed.path.lstrip('/')
+        abs_path = os.path.abspath(rel_path)
+        
+        if not os.path.exists(abs_path):
+            return jsonify({"error": f"File not found: {abs_path}"}), 404
+            
+        # Process
+        gen = get_audio_gen()
+        new_path = gen.process_sfx(
+            abs_path,
+            volume=data.get('volume', 1.0),
+            pitch=data.get('pitch', 1.0),
+            trim_start=data.get('trim_start', 0.0)
+        )
+        
+        # Return URL
+        new_rel = os.path.relpath(new_path, os.getcwd()).replace('\\', '/')
+        new_url = f"{request.host_url}{new_rel}"
+        
+        return jsonify({
+            "success": True,
+            "url": new_url,
+            "filename": os.path.basename(new_path)
+        })
+
+    except Exception as e:
+        print(f"SFX Processing Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/comfy-status")
+def comfy_status():
+    try:
+        response = requests.get(f"{comfy_bridge.base_url}/system_stats", timeout=1)
+        return jsonify({"connected": response.status_code == 200, "stats": response.json()})
+    except Exception as e:
+        print(f"ComfyUI Status Error: {e}")
+        return jsonify({"connected": False, "error": str(e)})
+
+@app.route('/api/generate-animation', methods=['POST'])
+def generate_animation():
+    data = request.json
+    start_img = data.get('start_image')
+    end_img = data.get('end_image')
+    positive = data.get('positive', "")
+    negative = data.get('negative', "")
+
+    if not start_img or not end_img:
+        return jsonify({"error": "Start and end images are required"}), 400
+
+    try:
+        # Resolve paths correctly (handle both /output/ and relative paths)
+        # Note: server.py root is SpriteLab, so 'output/...' is correct locally.
+        start_path_str = start_img.lstrip('/')
+        end_path_str = end_img.lstrip('/')
+        
+        start_path = Path(start_path_str)
+        end_path = Path(end_path_str)
+
+        print(f"Generating animation: {start_path} -> {end_path}")
+        
+        prompt_id = comfy_bridge.generate(start_path, end_path, positive, negative)
+        video_info = comfy_bridge.wait_for_result(prompt_id)
+        video_path = comfy_bridge.download_video(video_info)
+
+        return jsonify({
+            "success": True,
+            "video_url": f"/{video_path.as_posix()}"
+        })
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/output/<path:filename>")
 def serve_output(filename):

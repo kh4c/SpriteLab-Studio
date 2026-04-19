@@ -27,6 +27,12 @@
                 <div class="nav-item" onclick="app.navigate('welcome', 'sheet')">
                     Sprite Editor
                 </div>
+                <div class="nav-item" onclick="app.navigate('sound')">
+                    Sound Lab
+                </div>
+                <div class="nav-item" onclick="app.navigate('animation')">
+                    Animation Lab
+                </div>
             </div>
             <!-- User Profile Section -->
             <div class="user-profile">
@@ -93,8 +99,11 @@
                                     <h3>Sprite Editor</h3>
                                     <p>Slice and edit existing spritesheets</p>
                                 </div>
-                                <div class="stat-card" onclick="app.startDemo()">
-                                    <div class="stat-icon">🧪</div>
+                                <div class="stat-card" onclick="app.navigate('animation')">
+                                    <div class="stat-icon">🎬</div>
+                                    <h3>Animation Lab</h3>
+                                    <p>AI Video generation between frames</p>
+                                </div>
                                     <h3>Demo Mode</h3>
                                     <p>Load test2.mp4 instantly</p>
                                 </div>
@@ -632,39 +641,184 @@
                         </div>
                     </div>
                 </section>
-                <!-- Section 5: Settings -->
-                <section id="settings-screen">
+                <!-- Section 6: Sound Lab -->
+                <section id="sound-screen">
                     <div class="glass-card main-hero">
-                        <h1>Settings</h1>
-                        <p class="subtitle">Global application preferences.</p>
+                        <h1 id="sound-title">Sound<span>Lab</span></h1>
+                        <p class="subtitle">AI-powered SFX for your 2D assets.</p>
                         
-                        <div class="settings-grid">
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <label>Default Threshold</label>
-                                    <p>The starting sensitivity for background removal.</p>
-                                </div>
-                                <div class="setting-control">
-                                    <input type="number" id="setting-default-threshold" min="1" max="100" value="8">
+                        <div class="sound-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; text-align: left;">
+                            <div class="sound-card glass-card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                                <h3>Generate SFX</h3>
+                                <p style="color: var(--text-muted); font-size: 0.9rem;">Describe the sound you need (e.g. "pixel jump", "laser blast")</p>
+                                <div class="input-group">
+                                    <input type="text" id="sfx-prompt" placeholder="Ex: A sharp sword clashing sound..." class="btn-secondary" style="width: 100%; margin-bottom: 12px; padding: 12px; border: 1px solid var(--border-color);">
+                                    <div class="h-stack" style="gap: 12px; margin-bottom: 12px; align-items: center;">
+                                        <label style="font-size: 0.9rem;">Duration (s):</label>
+                                        <input type="number" id="sfx-duration" value="2" min="1" max="10" class="btn-secondary" style="width: 70px; text-align: center; border: 1px solid var(--border-color);">
+                                    </div>
+                                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 12px;">
+                                        <div class="h-stack" style="justify-content: space-between; width: 100%;">
+                                            <label style="font-size: 0.9rem;">Prompt Adherence (CFG):</label>
+                                            <span id="label-cfg" style="font-size: 0.9rem; color: var(--primary-color);">4.0</span>
+                                        </div>
+                                        <input type="range" id="sfx-guidance" min="1" max="10" step="0.5" value="4.0" style="width: 100%;" oninput="document.getElementById('label-cfg').innerText = this.value">
+                                    </div>
+                                    <div class="h-stack" style="gap: 12px; margin-bottom: 20px; align-items: center; justify-content: space-between;">
+                                        <label style="font-size: 0.9rem;">Clean / Hypercausal Preset:</label>
+                                        <input type="checkbox" id="sfx-hypercausal">
+                                    </div>
+                                    <button class="btn-primary" id="btn-generate-sfx" onclick="app.generateSFX()" style="width: 100%; padding: 12px;">Generate Sound</button>
                                 </div>
                             </div>
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <label>Default Mini-Preview Color</label>
-                                    <p>The background color for mini-previews in new projects.</p>
+                            
+                            <div class="sound-card glass-card" id="sfx-result-card" style="display: none; padding: 24px; flex-direction: column; gap: 16px;">
+                                <h3>Current Result</h3>
+                                <div id="sfx-player-container">
+                                    <audio id="sfx-player" controls style="width: 100%; margin-top: 12px;"></audio>
                                 </div>
-                                <div class="setting-control">
-                                    <input type="color" id="setting-default-preview-color" value="#71D364">
+                                <div class="h-stack" style="margin-top: auto; gap: 12px;">
+                                    <a id="sfx-download-link" href="#" download="sfx.wav" class="btn-secondary" style="text-decoration: none; flex: 1; text-align: center; padding: 10px; border-radius: 4px; display: flex; align-items: center; justify-content: center;">Download WAV</a>
+                                    <button class="btn-primary" onclick="app.openSFXEdit()" style="flex: 1; padding: 10px;">Fine Edit</button>
+                                </div>
+                                <div class="h-stack" style="margin-top: 12px; gap: 12px;">
+                                    <button class="btn-secondary" onclick="app.applySFXToProject()" style="flex: 1;">Use in Project</button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="button-group">
-                            <button class="btn-primary" onclick="app.saveSettings()">Save Preferences</button>
-                            <button class="btn-secondary" onclick="app.navigate('hub')">Discard Changes</button>
+                        <div id="sfx-progress" class="hidden" style="margin-top: 32px; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto;">
+                            <div class="progress-bar-container" style="height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                <div class="progress-bar-fill" id="sfx-fill" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;"></div>
+                            </div>
+                            <p id="sfx-status" style="margin-top: 12px; font-size: 0.9rem; color: var(--primary-color);">Synthesizing audio...</p>
                         </div>
                     </div>
                 </section>
+
+                <!-- Section 7: SFX Fine Edit -->
+                <section id="sfx-edit-screen">
+                    <div class="glass-card main-hero">
+                        <h1 id="sfx-edit-title">Fine<span>Tune</span></h1>
+                        <p class="subtitle">Adjust your generated sound effect.</p>
+                        
+                        <div class="editor-layout" style="grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px;">
+                            <div class="glass-card" style="padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+                                <h3>Preview</h3>
+                                <div id="sfx-edit-wave-container" style="height: 120px; background: rgba(0,0,0,0.3); border-radius: 8px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                    <div id="sfx-edit-wave-visual" style="width: 100%; height: 60px; background: var(--primary-color); opacity: 0.5; mask: linear-gradient(90deg, transparent, #fff, transparent); -webkit-mask: linear-gradient(90deg, transparent, #fff, transparent);"></div>
+                                    <p style="position: absolute; color: white; font-size: 0.8rem; font-weight: bold;">WAVEFORM PREVIEW</p>
+                                </div>
+                                <audio id="sfx-edit-player" controls style="width: 100%;"></audio>
+                                <div class="v-stack" style="gap: 12px;">
+                                    <button class="btn-primary" onclick="app.bakeSFX()" id="btn-bake-sfx">Bake & Save Changes</button>
+                                    <button class="btn-secondary" onclick="app.navigate('sound')">Back to Sound Lab</button>
+                                </div>
+                            </div>
+
+                            <div class="glass-card" style="padding: 24px; text-align: left;">
+                                <h3>Adjustments</h3>
+                                <div class="v-stack" style="margin-top: 20px; gap: 24px;">
+                                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                        <div class="h-stack" style="justify-content: space-between;">
+                                            <label>Volume</label>
+                                            <span id="label-vol">1.0</span>
+                                        </div>
+                                        <input type="range" id="sfx-vol" min="0" max="2" step="0.1" value="1.0" style="width: 100%;" oninput="app.updateSFXPreview()">
+                                    </div>
+                                    
+                                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                        <div class="h-stack" style="justify-content: space-between;">
+                                            <label>Pitch / Speed</label>
+                                            <span id="label-pitch">1.0</span>
+                                        </div>
+                                        <input type="range" id="sfx-pitch" min="0.5" max="2.0" step="0.1" value="1.0" style="width: 100%;" oninput="app.updateSFXPreview()">
+                                    </div>
+
+                                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                                        <div class="h-stack" style="justify-content: space-between;">
+                                            <label>Trim Start (s)</label>
+                                            <span id="label-trim-start">0.0</span>
+                                        </div>
+                                        <input type="range" id="sfx-trim-start" min="0" max="5" step="0.1" value="0.0" style="width: 100%;" oninput="app.updateSFXPreview()">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 8: Animation Lab -->
+                <section id="animation-screen" class="hidden">
+                    <div class="glass-card main-hero">
+                        <h1>Animation<span>Lab</span></h1>
+                        <p class="subtitle">AI-powered interpolation between frames using Wan 2.2.</p>
+                        
+                        <div class="comfy-status-badge" id="comfy-status" style="margin-top: 12px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(0,0,0,0.3); border-radius: 100px; font-size: 0.8rem; color: #ff4444;">
+                            <span class="status-dot" style="width: 8px; height: 8px; background: currentColor; border-radius: 50%; box-shadow: 0 0 8px currentColor;"></span>
+                            <span id="comfy-status-text">ComfyUI: Disconnected</span>
+                        </div>
+
+                        <div class="animation-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 32px; text-align: left;">
+                            <!-- Left: Frame Setup -->
+                            <div class="v-stack" style="gap: 24px;">
+                                <div class="glass-card" style="padding: 24px;">
+                                    <h3>Frame Anchors</h3>
+                                    <div class="h-stack" style="gap: 16px; margin-top: 16px;">
+                                        <div class="frame-slot glass-card" id="anim-frame-start" onclick="app.pickAnimFrame('start')" style="flex: 1; aspect-ratio: 1; border: 2px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden;">
+                                            <span style="font-size: 2rem;">🖼️</span>
+                                            <small style="margin-top: 8px; color: var(--text-muted);">Start Frame</small>
+                                        </div>
+                                        <div style="font-size: 1.5rem; display: flex; align-items: center;">➡️</div>
+                                        <div class="frame-slot glass-card" id="anim-frame-end" onclick="app.pickAnimFrame('end')" style="flex: 1; aspect-ratio: 1; border: 2px dashed rgba(255,255,255,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden;">
+                                            <span style="font-size: 2rem;">🖼️</span>
+                                            <small style="margin-top: 8px; color: var(--text-muted);">End Frame</small>
+                                        </div>
+                                    </div>
+                                    <p style="margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);">Tip: Use the same character in different poses for best results.</p>
+                                </div>
+
+                                <div class="glass-card" style="padding: 24px;">
+                                    <h3>Prompts</h3>
+                                    <div class="v-stack" style="gap: 16px; margin-top: 16px;">
+                                        <div class="input-group">
+                                            <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Positive Prompt</label>
+                                            <textarea id="anim-positive" class="btn-secondary" style="width: 100%; height: 80px; padding: 12px; border: 1px solid var(--border-color); resize: none; font-size: 0.9rem;" placeholder="Describe the motion..."></textarea>
+                                        </div>
+                                        <div class="input-group">
+                                            <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Negative Prompt</label>
+                                            <textarea id="anim-negative" class="btn-secondary" style="width: 100%; height: 60px; padding: 12px; border: 1px solid var(--border-color); resize: none; font-size: 0.9rem;" placeholder="Things to avoid..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Controls & Preview -->
+                            <div class="v-stack" style="gap: 24px;">
+                                <div class="glass-card" style="padding: 24px; min-height: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                                    <div id="anim-preview-placeholder" style="text-align: center;">
+                                        <span style="font-size: 4rem; opacity: 0.2;">🎬</span>
+                                        <p style="color: var(--text-muted); margin-top: 16px;">Generated video will appear here</p>
+                                    </div>
+                                    <video id="anim-video-player" controls class="hidden" style="width: 100%; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5);"></video>
+                                </div>
+
+                                <div class="glass-card" style="padding: 24px;">
+                                    <button class="btn-primary" id="btn-generate-anim" onclick="app.generateAnimation()" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: bold;">Generate Animation</button>
+                                    
+                                    <div id="anim-progress" class="hidden" style="margin-top: 20px;">
+                                        <div class="progress-bar-container" style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                            <div class="progress-bar-fill" id="anim-fill" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s;"></div>
+                                        </div>
+                                        <p id="anim-status" style="margin-top: 10px; font-size: 0.85rem; color: var(--primary-color);">Waiting for ComfyUI...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 9: Settings -->
             </div> <!-- End #app -->
         </main> <!-- End #main-view -->
     </div> <!-- End #app-container -->

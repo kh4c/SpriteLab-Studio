@@ -19,7 +19,10 @@ const state = {
     filterPresets: {},
     sliceMode: 'grid', // 'grid' or 'fixed'
     sliceWidth: 32,
-    sliceHeight: 32
+    sliceHeight: 32,
+    animStartFrame: null,
+    animEndFrame: null,
+    comfyStatus: { connected: false, polling: false }
 };
 
 const app = {
@@ -75,9 +78,11 @@ const app = {
     },
 
     saveSettings() {
-        state.defaultThreshold = parseInt(document.getElementById('setting-default-threshold').value);
-        state.defaultPreviewColor = document.getElementById('setting-default-preview-color').value;
-        
+        const thresholdInput = document.getElementById('setting-default-threshold');
+        const colorInput = document.getElementById('setting-default-preview-color');
+        if (thresholdInput) state.defaultThreshold = parseInt(thresholdInput.value);
+        if (colorInput) state.defaultPreviewColor = colorInput.value;
+
         this.persistSettings();
         this.applyGlobalPreviewColor();
 
@@ -282,6 +287,9 @@ const app = {
             'editor': state.currentMode === 'image' ? 'Image Editor / Cleanup' : (state.currentMode === 'sheet' ? 'Sprite Editor / Cleanup' : 'Sprite Maker / Cleanup'),
             'drawing': state.currentMode === 'image' ? 'Image Editor / Fine Edit' : (state.currentMode === 'sheet' ? 'Sprite Editor / Fine Edit' : 'Sprite Maker / Fine Edit'),
             'slicing': 'Sprite Editor / Slicing',
+            'sound': 'Sound Lab',
+            'sfx-edit': 'Sound Lab / Fine Tune',
+            'animation': 'Animation Lab',
             'export': state.currentMode === 'image' ? 'Image Editor / Result' : (state.currentMode === 'sheet' ? 'Sprite Editor / Result' : 'Sprite Maker / Result')
         };
         document.getElementById('breadcrumb').innerText = titles[screenId] || 'SpriteLab';
@@ -301,6 +309,10 @@ const app = {
             } else if (state.currentMode === 'image' && text === 'image editor') {
                 item.classList.add('active');
             } else if (state.currentMode === 'sheet' && text === 'sprite-editor') {
+                item.classList.add('active');
+            } else if ((screenId === 'sound' || screenId === 'sfx-edit') && text === 'sound lab') {
+                item.classList.add('active');
+            } else if (screenId === 'animation' && text === 'animation lab') {
                 item.classList.add('active');
             } else {
                 item.classList.remove('active');
@@ -346,14 +358,16 @@ const app = {
             // Auto-calc rows when columns change
             const colsInput = document.getElementById('export-cols');
             const rowsInput = document.getElementById('export-rows');
-            const updateRows = () => {
-                const activeCount = state.frames.filter(f => f.active).length;
-                const cols = parseInt(colsInput.value) || 1;
-                rowsInput.value = Math.ceil(activeCount / cols);
-            };
-            
-            colsInput.oninput = updateRows;
-            updateRows(); // Initial sync
+            if (colsInput && rowsInput) {
+                const updateRows = () => {
+                    const activeCount = state.frames.filter(f => f.active).length;
+                    const cols = parseInt(colsInput.value) || 1;
+                    rowsInput.value = Math.ceil(activeCount / cols);
+                };
+                
+                colsInput.oninput = updateRows;
+                updateRows(); // Initial sync
+            }
 
             canvasEditor.startMiniLoop();
             canvasEditor.initResize('mini-preview-panel-export');
@@ -429,9 +443,14 @@ const app = {
             }
             
             canvasEditor.startMiniLoop();
+        } else if (screenId === 'animation') {
+            this.stopLoop();
+            canvasEditor.stopMiniLoop();
+            canvasEditor.startComfyStatusPolling();
         } else {
             this.stopLoop();
             canvasEditor.stopMiniLoop();
+            canvasEditor.stopComfyStatusPolling();
         }
     },
 
@@ -448,17 +467,7 @@ const app = {
         document.body.setAttribute('data-theme', saved);
     },
 
-    loadSettings() {
-        const saved = localStorage.getItem('spritelab-threshold');
-        if (saved) state.defaultThreshold = parseInt(saved);
-        document.getElementById('setting-default-threshold').value = state.defaultThreshold;
-    },
 
-    saveSettings() {
-        state.defaultThreshold = parseInt(document.getElementById('setting-default-threshold').value);
-        localStorage.setItem('spritelab-threshold', state.defaultThreshold);
-        this.navigate('hub');
-    },
 
     async startSlicingFlow() {
         // Prepare slicing screen
@@ -794,6 +803,167 @@ const app = {
         state.frames[idx].active = !state.frames[idx].active;
         el.classList.toggle('active', state.frames[idx].active);
         el.classList.toggle('disabled', !state.frames[idx].active);
+    },
+
+    async generateSFX() {
+        const prompt = document.getElementById('sfx-prompt').value;
+        const duration = document.getElementById('sfx-duration').value;
+        const guidance = document.getElementById('sfx-guidance').value;
+        const isHypercausal = document.getElementById('sfx-hypercausal').checked;
+
+        if (!prompt) {
+            alert("Please enter a description for the sound.");
+            return;
+        }
+
+        let finalPrompt = prompt;
+        if (isHypercausal) {
+            finalPrompt = `clean digital ${prompt}, positive UI sound, minimalist, high quality, 44.1kHz, synthesized`;
+        }
+
+        const btn = document.getElementById('btn-generate-sfx');
+        const progress = document.getElementById('sfx-progress');
+        const fill = document.getElementById('sfx-fill');
+        const status = document.getElementById('sfx-status');
+        const resultCard = document.getElementById('sfx-result-card');
+
+        btn.disabled = true;
+        progress.classList.remove('hidden');
+        resultCard.style.display = 'none';
+        fill.style.width = '10%';
+        status.innerText = "Initializing AudioGen...";
+
+        // Simulate progress for UX
+        let p = 10;
+        const interval = setInterval(() => {
+            if (p < 90) {
+                p += 5;
+                fill.style.width = p + '%';
+                if (p > 40) status.innerText = "Generating sound waves...";
+                if (p > 70) status.innerText = "Finalizing audio file...";
+            }
+        }, 1000);
+
+        try {
+            const resp = await fetch('/api/generate-sfx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: finalPrompt,
+                    duration: duration,
+                    guidance_scale: guidance,
+                    video_name: state.videoName
+                })
+            });
+
+            clearInterval(interval);
+            const data = await resp.json();
+
+            if (data.error) throw new Error(data.error);
+
+            fill.style.width = '100%';
+            status.innerText = "Generation complete!";
+            
+            const player = document.getElementById('sfx-player');
+            player.src = data.url;
+            
+            const dl = document.getElementById('sfx-download-link');
+            dl.href = data.url;
+            dl.download = data.filename;
+
+            resultCard.style.display = 'flex';
+            setTimeout(() => {
+                progress.classList.add('hidden');
+                btn.disabled = false;
+            }, 500);
+
+        } catch (err) {
+            clearInterval(interval);
+            console.error("SFX Generation failed", err);
+            alert("SFX Generation failed: " + err.message);
+            progress.classList.add('hidden');
+            btn.disabled = false;
+        }
+    },
+
+    applySFXToProject() {
+        alert("Sound associated with project! You can find it in the output directory.");
+    },
+
+    openSFXEdit() {
+        const player = document.getElementById('sfx-player');
+        if (!player.src) return;
+        
+        state.lastGeneratedSFX = player.src;
+        this.navigate('sfx-edit');
+        
+        const editPlayer = document.getElementById('sfx-edit-player');
+        editPlayer.src = player.src;
+        
+        // Reset sliders
+        document.getElementById('sfx-vol').value = 1.0;
+        document.getElementById('sfx-pitch').value = 1.0;
+        document.getElementById('sfx-trim-start').value = 0.0;
+        this.updateSFXPreview();
+    },
+
+    updateSFXPreview() {
+        const vol = document.getElementById('sfx-vol').value;
+        const pitch = document.getElementById('sfx-pitch').value;
+        const trim = document.getElementById('sfx-trim-start').value;
+        
+        document.getElementById('label-vol').innerText = vol;
+        document.getElementById('label-pitch').innerText = pitch;
+        document.getElementById('label-trim-start').innerText = trim;
+        
+        const player = document.getElementById('sfx-edit-player');
+        player.volume = Math.min(1.0, vol); // HTML5 audio volume is 0-1
+        player.playbackRate = pitch;
+        
+        // Note: Real-time trimming is complex with standard <audio>, 
+        // usually requires Web Audio API for Offset.
+        // For now, we just update the labels and bake it on the server.
+    },
+
+    async bakeSFX() {
+        const btn = document.getElementById('btn-bake-sfx');
+        btn.disabled = true;
+        btn.innerText = "Baking...";
+
+        try {
+            const resp = await fetch('/api/process-sfx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: state.lastGeneratedSFX,
+                    volume: document.getElementById('sfx-vol').value,
+                    pitch: document.getElementById('sfx-pitch').value,
+                    trim_start: document.getElementById('sfx-trim-start').value,
+                    video_name: state.videoName
+                })
+            });
+
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error);
+
+            alert("SFX Baked Successfully!");
+            
+            // Go back to sound lab and update the results
+            this.navigate('sound');
+            const player = document.getElementById('sfx-player');
+            player.src = data.url;
+            
+            const dl = document.getElementById('sfx-download-link');
+            dl.href = data.url;
+            dl.download = data.filename;
+
+        } catch (err) {
+            console.error("Baking failed", err);
+            alert("Baking failed: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Bake & Save Changes";
+        }
     },
 
     startLoop() {
@@ -2494,6 +2664,134 @@ const canvasEditor = {
         const data = await resp.json();
         frame.base64 = data.base64;
         frame.clean_path = data.clean_path;
+    },
+
+    // --- ANIMATION LAB ---
+    startComfyStatusPolling() {
+        if (state.comfyStatus.polling) return;
+        state.comfyStatus.polling = true;
+        this.checkComfyStatus();
+        this.comfyInterval = setInterval(() => this.checkComfyStatus(), 5000);
+    },
+
+    stopComfyStatusPolling() {
+        state.comfyStatus.polling = false;
+        if (this.comfyInterval) clearInterval(this.comfyInterval);
+    },
+
+    async checkComfyStatus() {
+        try {
+            const resp = await fetch('/api/comfy-status');
+            const data = await resp.json();
+            state.comfyStatus.connected = data.connected;
+            
+            const badge = document.getElementById('comfy-status');
+            const text = document.getElementById('comfy-status-text');
+            if (badge && text) {
+                if (data.connected) {
+                    badge.style.color = '#43b581';
+                    text.innerText = "ComfyUI: Connected" + (data.stats && data.stats.queue_remaining > 0 ? ` (Queue: ${data.stats.queue_remaining})` : "");
+                } else {
+                    badge.style.color = '#ff4444';
+                    text.innerText = "ComfyUI: Disconnected";
+                }
+            }
+        } catch (e) {
+            state.comfyStatus.connected = false;
+        }
+    },
+
+    pickAnimFrame(slot) {
+        // For now, use the currently active frame in the editor or the first selected frame
+        const activeFrames = state.frames.filter(f => f.active);
+        if (activeFrames.length === 0) return alert("No active frames in project. Extract or upload some first!");
+
+        // Auto-select based on current context:
+        // If slot is 'start', use first active. If 'end', use last active.
+        const frame = slot === 'start' ? activeFrames[0] : activeFrames[activeFrames.length - 1];
+        
+        const slotEl = document.getElementById(`anim-frame-${slot}`);
+        if (slotEl) {
+            let path = frame.path.replace(/\\/g, '/');
+            if (path.includes('output/')) path = path.split('output/').pop();
+            const url = `/output/${path}`;
+            
+            slotEl.innerHTML = `<img src="${url}" style="width: 100%; height: 100%; object-fit: contain;">`;
+            if (slot === 'start') state.animStartFrame = url;
+            else state.animEndFrame = url;
+        }
+    },
+
+    async generateAnimation() {
+        if (!state.animStartFrame || !state.animEndFrame) {
+            return alert("Please pick both a Start and End frame.");
+        }
+        if (!state.comfyStatus.connected) {
+            return alert("ComfyUI is not connected. Please ensure it is running on port 8188.");
+        }
+
+        const positive = document.getElementById('anim-positive').value;
+        const negative = document.getElementById('anim-negative').value;
+        const btn = document.getElementById('btn-generate-anim');
+        const progress = document.getElementById('anim-progress');
+        const fill = document.getElementById('anim-fill');
+        const status = document.getElementById('anim-status');
+        const placeholder = document.getElementById('anim-preview-placeholder');
+        const player = document.getElementById('anim-video-player');
+
+        btn.disabled = true;
+        progress.classList.remove('hidden');
+        fill.style.width = '5%';
+        status.innerText = "Sending to ComfyUI...";
+        placeholder.classList.remove('hidden');
+        player.classList.add('hidden');
+
+        // Simple progress simulation for long process
+        let p = 5;
+        const interval = setInterval(() => {
+            if (p < 95) {
+                p += 2;
+                fill.style.width = p + '%';
+                if (p > 20) status.innerText = "Wan 2.2 processing frames...";
+                if (p > 50) status.innerText = "Interpolating motion...";
+                if (p > 80) status.innerText = "Finalizing video encode...";
+            }
+        }, 1500);
+
+        try {
+            const resp = await fetch('/api/generate-animation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    start_image: state.animStartFrame,
+                    end_image: state.animEndFrame,
+                    positive: positive,
+                    negative: negative
+                })
+            });
+
+            clearInterval(interval);
+            const data = await resp.json();
+
+            if (data.error) throw new Error(data.error);
+
+            fill.style.width = '100%';
+            status.innerText = "Animation Ready!";
+            
+            player.src = data.video_url;
+            player.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            player.play();
+
+        } catch (err) {
+            clearInterval(interval);
+            console.error("Animation failed", err);
+            alert("Animation failed: " + err.message);
+            status.innerText = "Generation failed.";
+        } finally {
+            btn.disabled = false;
+            setTimeout(() => progress.classList.add('hidden'), 3000);
+        }
     }
 };
 
