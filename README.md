@@ -56,18 +56,24 @@ Import and modify existing spritesheets.
 - **Smart Slicing**: Slice sheets by grid or fixed cell size.
 - **Batch Editing**: Apply transparency or palette filters to all frames simultaneously.
 
+![Sprite Editor Slicing](Image/slicing.png)
+
 ### Sound Lab
 AI-driven SFX creation powered by **AudioGen**.
 - **Text-to-SFX**: Generate sounds like "Laser blast", "Sword clang", or "Ambient rain" from simple prompts.
 - **Post-Processing**: Fine-tune volume, pitch (resampling), and trim start/end points.
+
+![Sound Lab Interface](Image/soundlab.png)
 
 ### Animation Lab (In Development)
 Bridge the gap between static frames using AI.
 - **Keyframe Interpolation**: Uses the **ComfyUI Bridge** (Wan 2.2 / SVD) to generate smooth motion.
 - **Workflow Driven**: Integrated with ComfyUI for advanced control.
 
+![Animation Lab Interface](Image/animationlab.png)
+
 #### Animation Pipeline (Wan 2.2)
-![Animation Lab Workflow](Image/wan2.2.png)
+![Animation Lab Workflow](Image/wan2.2%20workflow.png)
 
 ---
 
