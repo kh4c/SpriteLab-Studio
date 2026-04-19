@@ -1,4 +1,4 @@
-# SpriteLab Studio - AI-Powered Game Asset Suite
+# SpriteLab Studio - AI- Game Asset refining Suite
 
 ![SpriteLab Studio Banner](Image/MainPage.png)
 
