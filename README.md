@@ -13,10 +13,10 @@
 If you want to see the performance without leaving GitHub, check out these small clips:
 
 **AI Animation Result:**
-![](./Image/results/animation_result.mp4)
+<video src="./Image/results/animation_result.mp4" controls width="100%"></video>
 
 **Pixel-Perfect Sprite Perfection:**
-![](./Image/results/sprite_result.mp4)
+<video src="./Image/results/sprite_result.mp4" controls width="100%"></video>
 
 ---
 
