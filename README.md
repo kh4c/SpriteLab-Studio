@@ -7,16 +7,17 @@
 ---
 
 ## 📽️ Full Demo
-[![Watch the Demo](https://img.shields.io/badge/YouTube-Watch%20Demo-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=6WWTcY8P2rg)
+<video src="./Image/demo/demo_mini.mp4" controls width="100%"></video>
+*Watch the high-fidelity demo of SpriteLab Studio in action.*
 
-### Quick Previews (Watch Inside README)
-If you want to see the performance without leaving GitHub, check out these small clips:
+### Quick Previews (Auto-Playing)
+Check out these instant previews of the specialized pixel-art tools:
 
 **AI Animation Result:**
-<video src="./Image/results/animation_result.mp4" controls width="100%"></video>
+![AI Animation Preview](./Image/results/animation_result.gif)
 
 **Pixel-Perfect Sprite Perfection:**
-<video src="./Image/results/sprite_result.mp4" controls width="100%"></video>
+![Sprite Perfection Preview](./Image/results/sprite_result.gif)
 
 ---
 
@@ -44,8 +45,8 @@ SpriteLab Studio uses a specialized processing stack to ensure your assets remai
 
 | Raw AI Output (Problem) | SpriteLab Refined (Solution) |
 | :---: | :---: |
-| ![AI Problem](Image/ai%20problem.png) | <img src="Image/pixel%20perfect.png" width="300" alt="Pixel Perfect"> |
-| *Visible noise and blurred edges* | *Clean, pixel-perfect alignment* |
+| ![AI Problem](Image/ai%20problem.png) | ![](./Image/results/cleanup_result.gif) |
+| *Visible noise and blurred edges* | *Clean, auto-playing pixel perfection* |
 
 ---
 
