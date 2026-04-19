@@ -10,7 +10,7 @@
 ![Project Demo Video](INSERT_DEMO_VIDEO_HERE)
 
 > [!TIP]
-> Use the **Discord-themed dark mode** for the best eyes-on experience during long editing sessions!
+> Use the **premium dark mode** for the best eyes-on experience during long editing sessions!
 
 ---
 
@@ -38,9 +38,9 @@ AI-driven SFX creation powered by **AudioGen**.
 - **Text-to-SFX**: Generate sounds like "Laser blast", "Sword clang", or "Ambient rain" from simple prompts.
 - **Post-Processing**: Fine-tune volume, pitch (resampling), and trim start/end points.
 
-### Animation Lab
+### Animation Lab (In Development)
 Bridge the gap between static frames using AI.
-- **Keyframe Interpolation**: Uses the **ComfyUI Bridge** to generate smooth transitions between two images.
+- **Keyframe Interpolation**: Uses the **ComfyUI Bridge** (currently in active development) to generate smooth transitions between two images.
 - **Prompt Guided**: Use positive and negative prompts to influence the motion and style of the animation.
 
 ---
@@ -85,7 +85,7 @@ Bridge the gap between static frames using AI.
 | Feature | Tech Used |
 | :--- | :--- |
 | **Backend** | Flask (Python) |
-| **Frontend** | Vanilla JS, CSS (Discord Theme) |
+| **Frontend** | Vanilla JS, CSS (Premium Dark Theme) |
 | **Img Processing** | OpenCV, Pillow, NumPy |
 | **Audio AI** | Facebook AudioGen (AudioCraft) |
 | **Animation AI** | ComfyUI Bridge (Wan2.1 / SVD) |
