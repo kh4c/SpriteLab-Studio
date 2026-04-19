@@ -1,5 +1,12 @@
-flet
+flask
+flask-cors
+requests
 opencv-python
 pillow
 numpy
 tqdm
+scipy
+soundfile
+torch
+torchaudio
+audiocraft
