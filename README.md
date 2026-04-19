@@ -6,9 +6,22 @@
 
 ---
 
+## Demo
+![Project Demo Video](Image/demo/demo.mp4)
+
+---
+
+---
+
 ## Key Strengths
 
 - **AI Artifact Cleaning**: Specialized tools to remove noise, hallucination artifacts, and "AI blur" from generated assets.
+  
+  | Raw AI Output (Problem) | SpriteLab Refined (Solution) |
+  | :---: | :---: |
+  | ![AI Problem](Image/ai%20problem.png) | <img src="Image/pixel%20perfect.png" width="300" alt="Pixel Perfect"> |
+  | *Visible noise and blurred edges* | *Clean, pixel-perfect alignment* |
+
 - **Pixel-Perfect Alignment**: Ensures every frame is mathematically centered and aligned for smooth in-game motion without jitter.
 - **Optimized Spritesheet Exporting**: Smart packing algorithms that minimize empty space and provide one-click export for game engines.
 
