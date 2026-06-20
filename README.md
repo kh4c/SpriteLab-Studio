@@ -2,7 +2,7 @@
 
 [![SpriteLab Studio Banner](Image/MainPage.png)](https://www.youtube.com/watch?v=6WWTcY8P2rg)
 
-**SpriteLab Studio** is a personal pixel-art pipeline designed to help indie developers transform video and AI-generated content into optimized game assets. It focuses on maintaining pixel-perfect fidelity, precise alignment, and authentic retro aesthetics.
+**SpriteLab Studio** is a personal pixel-art pipeline designed to refine AI-generated animation assets to make them look better and be actually usable as optimized game assets. It focuses on maintaining pixel-perfect fidelity, precise alignment, and authentic retro aesthetics.
 
 ---
 
