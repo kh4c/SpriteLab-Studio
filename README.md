@@ -7,7 +7,7 @@
 ---
 
 ## 📽️ Full Demo
-<video src="./Image/0419.mp4" controls width="100%"></video>
+<video src="https://github.com/kh4c/SpriteLab-Studio/raw/master/Image/0419.mp4" controls width="100%"></video>
 *Watch the high-fidelity demo of SpriteLab Studio in action.*
 
 ### 🎬 Demo Showcase
