@@ -58,8 +58,8 @@ SpriteLab Studio uses a specialized processing stack to ensure your assets remai
 
 | Raw AI Output (Problem) | SpriteLab Refined (Solution) |
 | :---: | :---: |
-| ![AI Problem](Image/ai%20problem.png) | ![](Image/result%20(3).mp4) |
-| *Visible noise and blurred edges* | *Clean, auto-playing pixel perfection* |
+| ![AI Problem](Image/ai%20problem.png) | ![Pixel Perfect](Image/pixel_perfect_upscaled.png) |
+| *Visible noise and blurred edges* | *Clean, pixel-perfect sprite with alpha isolation* |
 
 ---
 
